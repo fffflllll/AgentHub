@@ -1,0 +1,33 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: agenthub-api
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/agenthub}
+    username: ${SPRING_DATASOURCE_USERNAME:agenthub}
+    password: ${SPRING_DATASOURCE_PASSWORD:agenthub_dev_password}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+agenthub:
+  security:
+    jwt-secret: ${JWT_SECRET:change-me-to-a-long-random-secret}
+    aes-key: ${AES_KEY:change-me-32-byte-base64-or-secret}
+    internal-service-token: ${INTERNAL_SERVICE_TOKEN:change-me-internal-service-token}

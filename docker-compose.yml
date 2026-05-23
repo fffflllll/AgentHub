@@ -1,0 +1,79 @@
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-agenthub}
+      MYSQL_USER: ${MYSQL_USER:-agenthub}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-agenthub_dev_password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-agenthub_root_password}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysqldata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  java-api:
+    build: ./backend-java
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-agenthub}
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-agenthub}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-agenthub_dev_password}
+      SPRING_DATA_REDIS_HOST: redis
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-secret}
+      AES_KEY: ${AES_KEY:-change-me-32-byte-base64-or-secret}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-change-me-internal-service-token}
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  python-ai:
+    build: ./backend-python
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      JAVA_INTERNAL_URL: http://java-api:8080
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-change-me-internal-service-token}
+      DEPLOY_TOKEN: ${DEPLOY_TOKEN:-}
+    ports:
+      - "8000:8000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      redis:
+        condition: service_healthy
+      java-api:
+        condition: service_started
+
+  frontend:
+    build: ./frontend
+    environment:
+      VITE_API_URL: http://localhost:8080
+      VITE_WS_URL: ws://localhost:8080/ws/chat
+    ports:
+      - "3000:80"
+    depends_on:
+      - java-api
+
+volumes:
+  mysqldata:
+  redisdata:
