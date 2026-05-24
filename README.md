@@ -15,7 +15,13 @@ docs/           Requirements, high-level design, task breakdown
 ## Local Development
 
 1. Copy `.env.example` to `.env` and adjust secrets.
-2. Start the service stack:
+2. Validate the Compose file:
+
+```bash
+docker compose config
+```
+
+3. Start the service stack:
 
 ```bash
 docker compose up --build

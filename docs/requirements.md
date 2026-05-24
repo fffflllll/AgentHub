@@ -421,7 +421,8 @@ Orchestrator 在群聊中以自然语言发布任务：
 - 右侧面板切换到「网页预览」Tab 展示结果
 
 **FR-44 预览安全**
-- Docker 沙箱使用 `--network none --cap-drop ALL --read-only` 隔离
+- 纯静态运行时预览沙箱使用 `--network none --cap-drop ALL --read-only` 隔离
+- 需要安装依赖、构建或调用 LLM 的构建/平台沙箱允许受控出站网络，但禁止入站并限制能力、内存和超时
 - 超时 30 秒自动终止
 - 内存限制 512MB
 
@@ -467,7 +468,7 @@ Orchestrator 在群聊中以自然语言发布任务：
 - 密码 bcrypt 加密存储
 - 使用轻量自研 JWT 鉴权所有 API 和 WebSocket 连接，不引入 Spring Security
 - Agent API Key 加密存储
-- Docker 沙箱严格隔离（禁网络、禁提权、只读文件系统）
+- Docker 沙箱按用途隔离：构建/平台沙箱允许受控出站，运行时预览沙箱禁网络、禁提权、只读文件系统
 
 **NFR-03 可用性**
 - WebSocket 断线自动重连（指数退避）

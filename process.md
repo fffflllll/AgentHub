@@ -24,7 +24,7 @@
 
 | 阶段 | 目标 | 状态 |
 | --- | --- | --- |
-| M0 | 建立执行基线，修正文档和基础设施一致性 | DOING |
+| M0 | 建立执行基线，修正文档和基础设施一致性 | REVIEW |
 | M1 | 跑通认证和 Provider 配置 | TODO |
 | M2 | 跑通单 Agent 流式对话闭环 | TODO |
 | M3 | 完成前端 IM MVP | TODO |
@@ -38,10 +38,10 @@
 
 | ID | 模块 | 范围 | 状态 | 验收标准 |
 | --- | --- | --- | --- | --- |
-| M0.1 | 建立进度追踪 | 新建根目录 `process.md`，记录执行原则、阶段、任务和验收方式 | REVIEW | 只新增 `process.md`，不修改业务代码 |
-| M0.2 | 文档一致性修正 | 修正 docs 中 MySQL/PostgreSQL、FR 编号、沙箱网络策略等明显冲突 | TODO | 文档与本地 Compose、迁移、代码骨架一致 |
-| M0.3 | 数据库迁移基线检查 | 对照设计补齐或明确延后缺失表/约束 | TODO | Flyway 迁移在空库可执行，缺失项有明确状态 |
-| M0.4 | 本地启动基线 | 验证 Compose 配置、健康检查和 README 指令 | TODO | `docker compose config` 通过，健康检查路径清晰 |
+| M0.1 | 建立进度追踪 | 新建根目录 `process.md`，记录执行原则、阶段、任务和验收方式 | DONE | 只新增 `process.md`，不修改业务代码 |
+| M0.2 | 文档一致性修正 | 修正 docs 中数据库口径、FR 编号、沙箱网络策略等明显冲突 | REVIEW | 文档与本地 Compose、迁移、代码骨架一致 |
+| M0.3 | 数据库迁移基线检查 | 对照设计补齐或明确延后缺失表/约束 | REVIEW | Flyway 迁移在空库可执行，缺失项有明确状态 |
+| M0.4 | 本地启动基线 | 验证 Compose 配置、健康检查和 README 指令 | REVIEW | `docker compose config` 通过，健康检查路径清晰 |
 | M1.1 | Java Auth 骨架 | 增加用户实体、仓库、JWT 工具和 Auth API 的最小闭环 | TODO | 可注册、登录并返回 JWT |
 | M1.2 | Provider 配置 | 增加 Provider CRUD、默认 Provider 和 API Key 加密存储 | TODO | API Key 不回显，默认 Provider 约束生效 |
 | M2.1 | 会话与消息基础 | 增加单聊创建、会话列表、消息持久化和历史查询 | TODO | 用户可创建单聊并查询历史消息 |
@@ -53,6 +53,9 @@
 | 日期 | 模块 | 验证 | 结果 |
 | --- | --- | --- | --- |
 | 2026-05-24 | M0.1 | 文档-only 变更，无需运行测试 | 通过 |
+| 2026-05-24 | M0.2 | `rg` 检查数据库旧口径、重复 FR-04、预览状态存储旧口径 | 通过 |
+| 2026-05-24 | M0.3 | 临时 MySQL 空库执行 `V1__init_schema.sql` + `V2__baseline_support_tables.sql`，并 `SHOW TABLES` | 通过 |
+| 2026-05-24 | M0.4 | `docker compose config` | 通过 |
 
 ## 阻塞项
 

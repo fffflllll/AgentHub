@@ -23,7 +23,7 @@ CREATE TABLE user_providers (
 );
 
 CREATE INDEX idx_providers_user_id ON user_providers(user_id);
-CREATE UNIQUE INDEX idx_providers_user_default ON user_providers(user_id, (CASE WHEN is_default = 1 THEN 1 ELSE NULL END));
+CREATE UNIQUE INDEX idx_providers_user_default ON user_providers(user_id, ((CASE WHEN is_default = 1 THEN 1 ELSE NULL END)));
 
 CREATE TABLE agents (
   id CHAR(36) PRIMARY KEY DEFAULT (UUID()),

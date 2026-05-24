@@ -1719,7 +1719,8 @@ CREATE TABLE user_providers (
 );
 
 CREATE INDEX idx_providers_user_id ON user_providers(user_id);
-CREATE UNIQUE INDEX idx_providers_user_default ON user_providers(user_id, (CASE WHEN is_default = 1 THEN 1 ELSE NULL END));
+CREATE UNIQUE INDEX idx_providers_user_default
+  ON user_providers(user_id, ((CASE WHEN is_default = 1 THEN 1 ELSE NULL END)));
 ```
 
 #### 6.2.3 `agent_provider_overrides` — Agent-Provider 覆盖映射表
@@ -1811,7 +1812,9 @@ CREATE TABLE session_members (
 CREATE INDEX idx_members_session ON session_members(session_id);
 -- MySQL 唯一索引不阻止多 NULL 值 → 应用层兜底：
 -- SessionService.addMember() 先 SELECT 检查 (session_id, COALESCE(user_id, ''), COALESCE(agent_id, '')) 是否已存在
-CREATE UNIQUE INDEX idx_members_unique ON session_members(session_id, user_id, agent_id);
+-- MySQL 唯一索引允许多个 NULL，因此分别约束用户成员和 Agent 成员。
+CREATE UNIQUE INDEX idx_members_unique_user ON session_members(session_id, user_id);
+CREATE UNIQUE INDEX idx_members_unique_agent ON session_members(session_id, agent_id);
 ```
 
 #### 6.2.7 `messages` — 消息表
@@ -1925,7 +1928,7 @@ CREATE TABLE code_reviews (
     task_id         CHAR(36) NOT NULL,                 -- 关联的 AgentTask / Run ID
     message_id      CHAR(36) REFERENCES messages(id) ON DELETE SET NULL,  -- 可选：关联的聊天消息
     status          VARCHAR(20)  NOT NULL DEFAULT 'PENDING',  -- PENDING / APPROVED / REJECTED / PARTIALLY_APPROVED
-    reviewer_id     CHAR(36) NOT NULL REFERENCES users(id),
+    reviewer_id     CHAR(36) REFERENCES users(id),      -- PENDING 时为空，审核后写入
     reviewed_at     DATETIME,
     created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -2049,12 +2052,12 @@ CREATE UNIQUE INDEX idx_verification_run ON verification_reports(run_id);
 |----|------|------|
 | users | `UNIQUE(username)` | 注册/登录查重 |
 | user_providers | `(user_id)` | 查用户的全部 Provider |
-| user_providers | `UNIQUE(user_id, (CASE WHEN is_default = 1 THEN 1 ELSE NULL END))` | 保证每个用户只有一个默认 Provider（MySQL 函数索引） |
+| user_providers | `UNIQUE(user_id, ((CASE WHEN is_default = 1 THEN 1 ELSE NULL END)))` | 保证每个用户只有一个默认 Provider（MySQL 函数索引） |
 | agent_provider_overrides | `UNIQUE(user_id, agent_id)` | 每个用户对每个 Agent 只能指定一个 Provider |
 | agent_provider_overrides | `(provider_id)` | 删除 Provider 时清理关联的覆盖记录 |
 | agents | `UNIQUE(identifier)` | 通过标识符查找 Agent |
 | sessions | `(owner_id, updated_at DESC)` | 会话列表排序 |
-| session_members | `UNIQUE(session_id, user_id, agent_id)` | 防止重复添加 |
+| session_members | `UNIQUE(session_id, user_id)` / `UNIQUE(session_id, agent_id)` | 防止 MySQL 多 NULL 场景下重复添加成员 |
 | messages | `(session_id, created_at DESC)` | 消息历史倒序查询 |
 | messages | `(session_id, created_at)` | 游标分页 |
 | task_plans | `(session_id)` | 查会话的全部任务计划 |

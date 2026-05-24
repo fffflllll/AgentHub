@@ -136,7 +136,7 @@
 | P0 | 创建 Agent 执行运行记录表 | Java/Python 协议 | `agent_task_runs`：runId、taskId、agentId、sessionId、status、promptTokens、completionTokens、startedAt、completedAt、durationMs、errorCode、errorMessage |
 | P1 | 创建 Agent 执行追踪事件表 | agent_task_runs | `agent_trace_events`：runId、sequence、eventType（TOKEN/TOOL_USE/FILE_CHANGE/COMMAND/ERROR/VERIFICATION/STATUS）、payload JSON |
 | P1 | 创建验证报告表 | agent_task_runs | `verification_reports`：runId、overallStatus（PASSED/FAILED）、checks_json（build/lint/test/typecheck 各检查项结果）、summary |
-| P1 | 补充预览状态存储 | 预览 API | `previews` 表或 Redis 状态结构 |
+| P1 | 补充预览状态存储 | 预览 API | `previews` 表 |
 | P2 | 优化索引和分页性能 | 压测数据 | 消息游标索引、会话更新时间索引 |
 | P2 | 评估文件存储扩容 | 大项目场景 | MinIO/S3 迁移方案 |
 
