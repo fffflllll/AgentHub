@@ -42,7 +42,7 @@
 | M0.2 | 文档一致性修正 | 修正 docs 中数据库口径、FR 编号、沙箱网络策略等明显冲突 | REVIEW | 文档与本地 Compose、迁移、代码骨架一致 |
 | M0.3 | 数据库迁移基线检查 | 对照设计补齐或明确延后缺失表/约束 | REVIEW | Flyway 迁移在空库可执行，缺失项有明确状态 |
 | M0.4 | 本地启动基线 | 验证 Compose 配置、健康检查和 README 指令 | REVIEW | `docker compose config` 通过，健康检查路径清晰 |
-| M1.1 | Java Auth 骨架 | 增加用户实体、仓库、JWT 工具和 Auth API 的最小闭环 | TODO | 可注册、登录并返回 JWT |
+| M1.1 | Java Auth 骨架 | 增加用户实体、仓库、JWT 工具和 Auth API 的最小闭环 | REVIEW | 可注册、登录并返回 JWT |
 | M1.2 | Provider 配置 | 增加 Provider CRUD、默认 Provider 和 API Key 加密存储 | TODO | API Key 不回显，默认 Provider 约束生效 |
 | M2.1 | 会话与消息基础 | 增加单聊创建、会话列表、消息持久化和历史查询 | TODO | 用户可创建单聊并查询历史消息 |
 | M2.2 | WebSocket 最小协议 | 实现鉴权连接、`chat.send`、`chat.message` 和错误返回 | TODO | 前端或脚本可通过 WS 发送并收到持久化消息 |
@@ -54,8 +54,10 @@
 | --- | --- | --- | --- |
 | 2026-05-24 | M0.1 | 文档-only 变更，无需运行测试 | 通过 |
 | 2026-05-24 | M0.2 | `rg` 检查数据库旧口径、重复 FR-04、预览状态存储旧口径 | 通过 |
-| 2026-05-24 | M0.3 | 临时 MySQL 空库执行 `V1__init_schema.sql` + `V2__baseline_support_tables.sql`，并 `SHOW TABLES` | 通过 |
+| 2026-05-24 | M0.3 | 临时 MySQL 空库执行 `V1__init_schema.sql` + `V2__add_task_and_review_tables.sql` + `V3__audit_preview_and_constraints.sql`，并 `SHOW TABLES` | 通过 |
 | 2026-05-24 | M0.4 | `docker compose config` | 通过 |
+| 2026-05-24 | M1.1 | `mvn test` | 通过 |
+| 2026-05-24 | M1.1 | 临时 MySQL 启动 Java API，curl 验证注册、登录、错误密码 401 | 通过 |
 
 ## 阻塞项
 

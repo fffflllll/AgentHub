@@ -7,4 +7,5 @@ Keep cross-service database notes here until the schema is split into shared mig
 Current baseline:
 
 - `V1__init_schema.sql`: users, providers, agents, sessions, messages, code blocks, project files.
-- `V2__baseline_support_tables.sql`: member uniqueness, project file alignment, task plans, code reviews and patches, previews, deployments, agent runs, trace events, and verification reports.
+- `V2__add_task_and_review_tables.sql`: task plans, code reviews and patches, deployments, and project file soft-delete/content alignment.
+- `V3__audit_preview_and_constraints.sql`: effective member uniqueness, previews, agent runs, trace events, and verification reports.
