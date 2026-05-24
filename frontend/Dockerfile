@@ -1,5 +1,9 @@
 FROM node:20-alpine AS build
 WORKDIR /app
+ARG VITE_API_URL=http://localhost:18080
+ARG VITE_WS_URL=ws://localhost:18080/ws/chat
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_WS_URL=$VITE_WS_URL
 COPY package*.json ./
 RUN npm install
 COPY . .

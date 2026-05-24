@@ -40,7 +40,7 @@ services:
       AES_KEY: ${AES_KEY:-change-me-32-byte-base64-or-secret}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-change-me-internal-service-token}
     ports:
-      - "8080:8080"
+      - "${JAVA_API_PORT:-18080}:8080"
     depends_on:
       mysql:
         condition: service_healthy
@@ -65,10 +65,14 @@ services:
         condition: service_started
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:${JAVA_API_PORT:-18080}
+        VITE_WS_URL: ws://localhost:${JAVA_API_PORT:-18080}/ws/chat
     environment:
-      VITE_API_URL: http://localhost:8080
-      VITE_WS_URL: ws://localhost:8080/ws/chat
+      VITE_API_URL: http://localhost:${JAVA_API_PORT:-18080}
+      VITE_WS_URL: ws://localhost:${JAVA_API_PORT:-18080}/ws/chat
     ports:
       - "3000:80"
     depends_on:
