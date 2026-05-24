@@ -36,7 +36,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-agenthub}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-agenthub_dev_password}
       SPRING_DATA_REDIS_HOST: redis
-      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-secret}
+      JWT_SECRET: ${JWT_SECRET:-}
       AES_KEY: ${AES_KEY:-change-me-32-byte-base64-or-secret}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-change-me-internal-service-token}
     ports:

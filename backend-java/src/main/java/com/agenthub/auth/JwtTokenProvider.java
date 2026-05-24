@@ -17,7 +17,8 @@ public class JwtTokenProvider {
   private final Algorithm algorithm;
   private final JWTVerifier verifier;
 
-  public JwtTokenProvider(@Value("${agenthub.auth.jwt-secret}") String jwtSecret) {
+  public JwtTokenProvider(@Value("${agenthub.auth.jwt-secret:}") String jwtSecret) {
+    validateSecret(jwtSecret);
     this.algorithm = Algorithm.HMAC256(jwtSecret);
     this.verifier = JWT.require(algorithm).build();
   }
@@ -32,15 +33,23 @@ public class JwtTokenProvider {
   }
 
   public String validateToken(String token) {
-    try {
-      DecodedJWT jwt = verifier.verify(token);
-      String userId = jwt.getClaim(USER_ID_CLAIM).asString();
-      if (userId == null || userId.isBlank()) {
-        throw new JWTVerificationException("missing userId claim");
-      }
-      return userId;
-    } catch (JWTVerificationException exception) {
-      throw exception;
+    DecodedJWT jwt = verifier.verify(token);
+    String userId = jwt.getClaim(USER_ID_CLAIM).asString();
+    if (userId == null || userId.isBlank()) {
+      throw new JWTVerificationException("missing userId claim");
+    }
+    return userId;
+  }
+
+  private void validateSecret(String jwtSecret) {
+    if (jwtSecret == null || jwtSecret.isBlank()) {
+      throw new IllegalStateException("JWT_SECRET must be configured");
+    }
+    if (jwtSecret.length() < 32) {
+      throw new IllegalStateException("JWT_SECRET must be at least 32 characters");
+    }
+    if (jwtSecret.startsWith("change-me") || jwtSecret.startsWith("replace-with")) {
+      throw new IllegalStateException("JWT_SECRET must not use a placeholder value");
     }
   }
 }

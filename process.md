@@ -58,6 +58,7 @@
 | 2026-05-24 | M0.4 | `docker compose config` | 通过 |
 | 2026-05-24 | M1.1 | `mvn test` | 通过 |
 | 2026-05-24 | M1.1 | 临时 MySQL 启动 Java API，curl 验证注册、登录、错误密码 401 | 通过 |
+| 2026-05-24 | M1.1 安全硬化 | `mvn test`，显式 `JWT_SECRET` 启动 Java API，curl 验证弱密码 400、注册/登录成功、未鉴权 401 | 通过 |
 
 ## 阻塞项
 

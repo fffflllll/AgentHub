@@ -30,6 +30,10 @@ mybatis:
 
 agenthub:
   auth:
-    jwt-secret: ${JWT_SECRET:change-me-to-a-long-random-secret}
+    jwt-secret: ${JWT_SECRET:}
     aes-key: ${AES_KEY:change-me-32-byte-base64-or-secret}
     internal-service-token: ${INTERNAL_SERVICE_TOKEN:change-me-internal-service-token}
+
+logging:
+  level:
+    com.agenthub: INFO
