@@ -10,6 +10,28 @@ export type SenderType = 'USER' | 'AGENT' | 'SYSTEM';
 export type MessageType = 'TEXT' | 'CODE' | 'TASK_PLAN' | 'SYSTEM';
 export type TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED';
 
+export type UserInfo = {
+  id: string;
+  username: string;
+  displayName?: string | null;
+  avatarUrl?: string | null;
+};
+
+export type LoginRequest = {
+  username: string;
+  password: string;
+};
+
+export type RegisterRequest = {
+  username: string;
+  password: string;
+};
+
+export type AuthResponse = {
+  token: string;
+  user: UserInfo;
+};
+
 export type AgentResponse = {
   id: string;
   identifier: string;
