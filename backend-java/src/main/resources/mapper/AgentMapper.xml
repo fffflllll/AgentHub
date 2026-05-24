@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.agenthub.mapper.AgentMapper">
+  <resultMap id="AgentResultMap" type="com.agenthub.model.Agent">
+    <id property="id" column="id" />
+    <result property="identifier" column="identifier" />
+    <result property="name" column="name" />
+    <result property="roleDesc" column="role_desc" />
+    <result property="systemPrompt" column="system_prompt" />
+    <result property="defaultModel" column="default_model" />
+    <result property="agentMode" column="agent_mode" />
+    <result property="platformType" column="platform_type" />
+    <result property="createdAt" column="created_at" />
+  </resultMap>
+
+  <select id="findAll" resultMap="AgentResultMap">
+    SELECT id, identifier, name, role_desc, system_prompt, default_model, agent_mode, platform_type, created_at
+    FROM agents
+    ORDER BY created_at ASC
+  </select>
+</mapper>

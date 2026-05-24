@@ -593,12 +593,17 @@ curl -sS http://localhost:18080/api/users/me \
   - 登录成功后进入 `/` 工作台。
   - 登录后刷新页面会调用 `/api/users/me` 恢复用户。
   - 工作台侧栏显示当前用户和退出登录按钮。
+- 针对登录后工作台落地体验补齐：
+  - `GET /api/agents` 返回数据库预置 Agent 列表。
+  - `GET /api/sessions` 当前返回空列表，避免未实现接口在登录后刷 500。
+  - 未实现资源统一返回 404 / `not found`，不再进入 500 未捕获异常日志。
 
 ## 19. 已知风险与后续建议
 
 | 优先级 | 项目 | 说明 |
 | --- | --- | --- |
-| P0 | 真实会话/Agent API 未实现 | 登录后工作台会携带 token 请求会话和 Agent 数据，但对应后端 Controller 尚未落地 |
+| P0 | 会话 API 仍是占位 | `GET /api/sessions` 当前只返回空列表，创建会话、成员和消息接口仍待 M2 实现 |
+| P1 | Agent API 只支持列表 | `GET /api/agents` 已返回预置 Agent，但 Agent Provider 覆盖配置仍待 M1.2 实现 |
 | P1 | 前端登录态只存 token | 用户信息在内存中，刷新后依赖 `/api/users/me` 恢复，这是当前设计预期 |
 | P1 | 并发注册唯一键冲突 | 业务层先查再插，极端并发下数据库唯一键异常没有转换成 40901 |
 | P1 | token 无刷新/吊销机制 | JWT 7 天有效，退出登录只能前端删除 token，服务端无法主动吊销已签发 token |
