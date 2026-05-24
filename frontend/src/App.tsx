@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   CheckCircle2,
   ChevronDown,
@@ -10,6 +10,7 @@ import {
   Eye,
   FileCode2,
   Folder,
+  LogOut,
   Menu,
   MessageSquarePlus,
   PanelLeft,
@@ -23,6 +24,8 @@ import {
   Wifi,
   Workflow,
 } from 'lucide-react';
+import { AuthProvider, useAuth } from './auth/AuthContext';
+import { AuthLoadingScreen, LoginPage, RegisterPage } from './auth/AuthPages';
 import { agentHubApi } from './shared/api';
 import { config } from './shared/config';
 import type {
@@ -34,6 +37,7 @@ import type {
   TaskItemResponse,
   TaskPlanResponse,
   TaskStatus,
+  UserInfo,
 } from './shared/types';
 
 type ApiErrors = {
@@ -95,6 +99,11 @@ const formatTime = (value?: string | null) => {
     hour: '2-digit',
     minute: '2-digit',
   });
+};
+
+const getUserInitials = (user?: UserInfo | null) => {
+  const value = user?.displayName || user?.username || 'AH';
+  return value.slice(0, 2).toUpperCase();
 };
 
 const toErrorMessage = (reason: unknown) => {
@@ -159,16 +168,20 @@ function SessionList({
   agents,
   errors,
   loading,
+  onLogout,
   onSelect,
   selectedSessionId,
   sessions,
+  user,
 }: {
   agents: AgentResponse[];
   errors: ApiErrors;
   loading: boolean;
+  onLogout: () => void;
   onSelect: (sessionId: string) => void;
   selectedSessionId: string | null;
   sessions: SessionResponse[];
+  user: UserInfo | null;
 }) {
   return (
     <aside className="hidden h-screen border-r border-neutral-200 bg-[#f6f6f3] lg:flex lg:w-[304px] lg:flex-col">
@@ -295,12 +308,24 @@ function SessionList({
 
       <div className="border-t border-neutral-200 px-4 py-3">
         <div className="flex items-center gap-3 rounded-lg p-2">
-          <span className="grid size-9 place-items-center rounded-full bg-neutral-950 text-xs font-bold text-white">AH</span>
+          <span className="grid size-9 place-items-center rounded-full bg-neutral-950 text-xs font-bold text-white">
+            {getUserInitials(user)}
+          </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-semibold text-neutral-950">AgentHub</span>
+            <span className="block truncate text-sm font-semibold text-neutral-950">
+              {user?.displayName || user?.username || 'AgentHub'}
+            </span>
             <span className="block truncate text-xs text-neutral-500">API {config.apiUrl}</span>
           </span>
-          <Settings className="text-neutral-500" size={18} />
+          <button
+            aria-label="退出登录"
+            className="grid size-9 place-items-center rounded-lg text-neutral-500 transition hover:bg-white hover:text-neutral-950"
+            onClick={onLogout}
+            title="退出登录"
+            type="button"
+          >
+            <LogOut size={18} />
+          </button>
         </div>
       </div>
     </aside>
@@ -642,7 +667,21 @@ function WorkspacePanel({ codeBlocks }: { codeBlocks: CodeBlockView[] }) {
   );
 }
 
-export function App() {
+type RoutePath = '/' | '/login' | '/register';
+
+const getRoutePath = (): RoutePath => {
+  if (typeof window === 'undefined') {
+    return '/';
+  }
+
+  if (window.location.pathname === '/login' || window.location.pathname === '/register') {
+    return window.location.pathname;
+  }
+
+  return '/';
+};
+
+function WorkspaceApp({ onLogout, user }: { onLogout: () => void; user: UserInfo | null }) {
   const [agents, setAgents] = useState<AgentResponse[]>([]);
   const [sessions, setSessions] = useState<SessionResponse[]>([]);
   const [members, setMembers] = useState<SessionMemberResponse[]>([]);
@@ -765,9 +804,11 @@ export function App() {
           agents={agents}
           errors={errors}
           loading={loadingIndex}
+          onLogout={onLogout}
           onSelect={setSelectedSessionId}
           selectedSessionId={selectedSessionId}
           sessions={sessions}
+          user={user}
         />
         <ChatArea
           agents={agents}
@@ -780,5 +821,69 @@ export function App() {
         <WorkspacePanel codeBlocks={codeBlocks} />
       </div>
     </main>
+  );
+}
+
+function RoutedApp() {
+  const { initializing, isAuthenticated, logout, user } = useAuth();
+  const [route, setRoute] = useState<RoutePath>(() => getRoutePath());
+
+  const navigate = useCallback((path: RoutePath, mode: 'push' | 'replace' = 'push') => {
+    if (typeof window !== 'undefined') {
+      if (mode === 'replace') {
+        window.history.replaceState(null, '', path);
+      } else {
+        window.history.pushState(null, '', path);
+      }
+    }
+
+    setRoute(path);
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = () => setRoute(getRoutePath());
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  useEffect(() => {
+    if (initializing) {
+      return;
+    }
+
+    if (!isAuthenticated && route === '/') {
+      navigate('/login', 'replace');
+    }
+
+    if (isAuthenticated && (route === '/login' || route === '/register')) {
+      navigate('/', 'replace');
+    }
+  }, [initializing, isAuthenticated, navigate, route]);
+
+  if (initializing) {
+    return <AuthLoadingScreen />;
+  }
+
+  if (!isAuthenticated) {
+    return route === '/register' ? <RegisterPage onNavigate={navigate} /> : <LoginPage onNavigate={navigate} />;
+  }
+
+  return (
+    <WorkspaceApp
+      onLogout={() => {
+        logout();
+        navigate('/login');
+      }}
+      user={user}
+    />
+  );
+}
+
+export function App() {
+  return (
+    <AuthProvider>
+      <RoutedApp />
+    </AuthProvider>
   );
 }

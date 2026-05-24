@@ -25,7 +25,7 @@
 | 阶段 | 目标 | 状态 |
 | --- | --- | --- |
 | M0 | 建立执行基线，修正文档和基础设施一致性 | REVIEW |
-| M1 | 跑通认证和 Provider 配置 | TODO |
+| M1 | 跑通认证和 Provider 配置 | DOING |
 | M2 | 跑通单 Agent 流式对话闭环 | TODO |
 | M3 | 完成前端 IM MVP | TODO |
 | M4 | 支持群聊、@mention 和 Orchestrator | TODO |
@@ -43,6 +43,7 @@
 | M0.3 | 数据库迁移基线检查 | 对照设计补齐或明确延后缺失表/约束 | REVIEW | Flyway 迁移在空库可执行，缺失项有明确状态 |
 | M0.4 | 本地启动基线 | 验证 Compose 配置、健康检查和 README 指令 | REVIEW | `docker compose config` 通过，健康检查路径清晰 |
 | M1.1 | Java Auth 骨架 | 增加用户实体、仓库、JWT 工具和 Auth API 的最小闭环 | REVIEW | 可注册、登录并返回 JWT |
+| M1.1.5 | 前端认证闭环 | 增加 `/api/users/me`、前端登录/注册页、Token 持久化、路由守卫和退出登录 | REVIEW | 可从前端登录/注册，刷新后恢复登录态，未登录访问主页面跳转登录页 |
 | M1.2 | Provider 配置 | 增加 Provider CRUD、默认 Provider 和 API Key 加密存储 | TODO | API Key 不回显，默认 Provider 约束生效 |
 | M2.1 | 会话与消息基础 | 增加单聊创建、会话列表、消息持久化和历史查询 | TODO | 用户可创建单聊并查询历史消息 |
 | M2.2 | WebSocket 最小协议 | 实现鉴权连接、`chat.send`、`chat.message` 和错误返回 | TODO | 前端或脚本可通过 WS 发送并收到持久化消息 |
@@ -59,6 +60,10 @@
 | 2026-05-24 | M1.1 | `mvn test` | 通过 |
 | 2026-05-24 | M1.1 | 临时 MySQL 启动 Java API，curl 验证注册、登录、错误密码 401 | 通过 |
 | 2026-05-24 | M1.1 安全硬化 | `mvn test`，显式 `JWT_SECRET` 启动 Java API，curl 验证弱密码 400、注册/登录成功、未鉴权 401 | 通过 |
+| 2026-05-24 | M1.1.5 | `backend-java` 执行 `mvn test` | 通过（无测试源，编译通过） |
+| 2026-05-24 | M1.1.5 | `frontend` 执行 `npm install` 后 `npm run build` | 通过 |
+| 2026-05-24 | M1.1.5 | 本地 Java API + MySQL，curl 验证注册、登录、`/api/users/me`、未鉴权 401 | 通过 |
+| 2026-05-24 | M1.1.5 | Vite dev server 浏览器验收 `/` 路由守卫、`/login`、`/register`、登录进入工作台 | 通过 |
 
 ## 阻塞项
 

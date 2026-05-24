@@ -6,6 +6,9 @@
 node_modules/
 dist/
 coverage/
+*.tsbuildinfo
+frontend/vite.config.d.ts
+frontend/vite.config.js
 
 # Java
 target/
