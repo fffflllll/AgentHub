@@ -30,7 +30,7 @@ mybatis:
 
 agenthub:
   auth:
-    jwt-secret: ${JWT_SECRET:}
+    jwt-secret: ${JWT_SECRET:t6Qz3Jd+R1bXpN8vY2kM5wA0cF4gH7jK9lL0mN3oP6qS9tU1vW2xY5zA8bC4dE7fG0hI3jK6lM9nO2pQ5rT8uV1wX4yZ7a}
     aes-key: ${AES_KEY:change-me-32-byte-base64-or-secret}
     internal-service-token: ${INTERNAL_SERVICE_TOKEN:change-me-internal-service-token}
 
