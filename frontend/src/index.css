@@ -3,10 +3,34 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
-  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  color-scheme: light;
+  font-family:
+    "SF Pro Display",
+    "Avenir Next",
+    "PingFang SC",
+    "Hiragino Sans GB",
+    "Microsoft YaHei",
+    system-ui,
+    sans-serif;
+  background: #ffffff;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   margin: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+textarea {
+  font: inherit;
+}
+
+textarea::placeholder {
+  opacity: 1;
 }

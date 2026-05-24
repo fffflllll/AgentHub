@@ -37,7 +37,8 @@ class ChatMessage:
 @dataclass(frozen=True)
 class FilePatch:
     file_path: str
-    patch_type: str
+    patch_type: str          # CREATE / MODIFY / DELETE
+    base_version: int        # Agent 生成 patch 时的文件版本号（乐观锁）
     new_content: str
     original_content: str | None = None
 

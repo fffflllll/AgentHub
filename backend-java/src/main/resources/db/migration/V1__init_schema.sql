@@ -23,6 +23,7 @@ CREATE TABLE user_providers (
 );
 
 CREATE INDEX idx_providers_user_id ON user_providers(user_id);
+CREATE UNIQUE INDEX idx_providers_user_default ON user_providers(user_id, (CASE WHEN is_default = 1 THEN 1 ELSE NULL END));
 
 CREATE TABLE agents (
   id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
@@ -49,6 +50,8 @@ CREATE TABLE agent_provider_overrides (
   CONSTRAINT fk_override_agent FOREIGN KEY (agent_id) REFERENCES agents(id),
   CONSTRAINT fk_override_provider FOREIGN KEY (provider_id) REFERENCES user_providers(id) ON DELETE CASCADE
 );
+
+CREATE INDEX idx_override_provider ON agent_provider_overrides(provider_id);
 
 CREATE TABLE sessions (
   id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
@@ -123,8 +126,8 @@ CREATE TABLE project_files (
 
 INSERT INTO agents (identifier, name, role_desc, system_prompt, default_model, agent_mode, platform_type)
 VALUES
-  ('frontend_agent', 'Frontend Agent', 'Frontend development expert', 'You are a frontend engineering expert.', 'claude-sonnet-4-20250514', 'LLM', NULL),
-  ('backend_agent', 'Backend Agent', 'Backend development expert', 'You are a backend engineering expert.', 'claude-sonnet-4-20250514', 'LLM', NULL),
-  ('test_agent', 'Test Agent', 'Testing expert', 'You are a software testing expert.', 'gpt-4o', 'LLM', NULL),
-  ('orchestrator', 'Orchestrator', 'Task planning and coordination', 'You are a project orchestrator for multi-agent development.', 'claude-sonnet-4-20250514', 'LLM', NULL),
-  ('claude_code_agent', 'Claude Code Agent', 'Full-stack coding agent powered by Claude Code CLI', 'Use the project workspace to complete coding tasks.', 'claude-sonnet-4-20250514', 'PLATFORM', 'CLAUDE_CODE');
+  ('frontend_agent', '前端Agent', '前端开发专家', '你是前端工程专家，擅长 React、TypeScript、CSS 和交互实现。', 'claude-sonnet-4-20250514', 'LLM', NULL),
+  ('backend_agent', '后端Agent', '后端开发专家', '你是后端工程专家，擅长 API、数据库、消息队列和系统设计。', 'claude-sonnet-4-20250514', 'LLM', NULL),
+  ('test_agent', '测试Agent', '测试与质量保障专家', '你是软件测试专家，擅长单元测试、集成测试和缺陷分析。', 'gpt-4o', 'LLM', NULL),
+  ('orchestrator', 'Orchestrator', '任务拆解与协作调度', '你是多 Agent 开发团队的项目协调者，负责理解需求、拆解任务、分配给合适的 Agent 并汇总结果。', 'claude-sonnet-4-20250514', 'LLM', NULL),
+  ('claude_code_agent', 'Claude Code Agent', 'Claude Code CLI 驱动的全栈开发 Agent', '你会使用项目工作区完成复杂开发任务，并输出清晰的文件变更说明。', 'claude-sonnet-4-20250514', 'PLATFORM', 'CLAUDE_CODE');

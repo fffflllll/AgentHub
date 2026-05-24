@@ -26,7 +26,10 @@ Default ports:
 | Service | URL |
 |---------|-----|
 | Frontend | http://localhost:3000 |
-| Java API | http://localhost:18080/api/health |
+| Java API via frontend proxy | http://localhost:3000/api/health |
+| Java API direct debug port | http://localhost:18080/api/health |
 | Python AI | http://localhost:8000/health |
 | MySQL | localhost:3306 |
 | Redis | localhost:6379 |
+
+The production frontend container serves static assets and proxies `/api/*` and `/ws/*` to the Java API service through Nginx.
