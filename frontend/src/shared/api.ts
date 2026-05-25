@@ -12,6 +12,7 @@ import type {
   SessionMemberResponse,
   SessionResponse,
   UpdateProviderRequest,
+  UpdateUserRequest,
   UserInfo,
 } from './types';
 
@@ -151,6 +152,8 @@ export const agentHubApi = {
     request<AuthResponse>('/auth/register', { method: 'POST', body, skipAuth: true }),
   login: (body: LoginRequest) => request<AuthResponse>('/auth/login', { method: 'POST', body, skipAuth: true }),
   getCurrentUser: () => request<UserInfo>('/users/me'),
+  updateCurrentUser: (body: UpdateUserRequest) =>
+    request<UserInfo>('/users/me', { method: 'PUT', body }),
   getAgents: () => request<AgentResponse[]>('/agents'),
   getProviders: () => request<ProviderResponse[]>('/providers'),
   createProvider: (body: CreateProviderRequest) =>

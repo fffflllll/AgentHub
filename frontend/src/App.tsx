@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   BadgeCheck,
   CheckCircle2,
+  ChevronRight,
   ChevronDown,
   Circle,
   CircleDot,
@@ -12,6 +13,8 @@ import {
   Eye,
   FileCode2,
   Folder,
+  Gauge,
+  KeyRound,
   LogOut,
   Menu,
   MessageSquarePlus,
@@ -27,6 +30,7 @@ import {
   Sparkles,
   TestTube2,
   Trash2,
+  UserRound,
   Users,
   Wifi,
   Workflow,
@@ -47,6 +51,7 @@ import type {
   TaskItemResponse,
   TaskPlanResponse,
   TaskStatus,
+  UpdateUserRequest,
   UserInfo,
 } from './shared/types';
 
@@ -75,6 +80,14 @@ type ProviderFormState = {
   isDefault: boolean;
 };
 
+type ProviderDialogMode = 'create' | 'edit';
+type SettingsView = 'account' | 'providers';
+
+type ProfileFormState = {
+  displayName: string;
+  avatarUrl: string;
+};
+
 const providerTypeLabels: Record<ProviderType, string> = {
   OPENAI: 'OpenAI',
   ANTHROPIC: 'Anthropic',
@@ -93,6 +106,11 @@ const createProviderForm = (): ProviderFormState => ({
   baseUrl: '',
   defaultModel: providerDefaults.OPENAI,
   isDefault: true,
+});
+
+const createProfileForm = (user?: UserInfo | null): ProfileFormState => ({
+  displayName: user?.displayName ?? '',
+  avatarUrl: user?.avatarUrl ?? '',
 });
 
 const agentVisuals: Record<string, AgentVisual> = {
@@ -208,6 +226,7 @@ function SessionList({
   errors,
   loading,
   onLogout,
+  onOpenSettings,
   onSelect,
   selectedSessionId,
   sessions,
@@ -217,11 +236,21 @@ function SessionList({
   errors: ApiErrors;
   loading: boolean;
   onLogout: () => void;
+  onOpenSettings: (view: SettingsView) => void;
   onSelect: (sessionId: string) => void;
   selectedSessionId: string | null;
   sessions: SessionResponse[];
   user: UserInfo | null;
 }) {
+  const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
+  const username = user?.username || 'AgentHub';
+  const displayName = user?.displayName || username;
+
+  const openSettingsView = (view: SettingsView) => {
+    setSettingsMenuOpen(false);
+    onOpenSettings(view);
+  };
+
   return (
     <aside className="hidden h-screen border-r border-neutral-200 bg-[#f6f6f3] lg:flex lg:w-[304px] lg:flex-col">
       <div className="flex h-16 items-center justify-between px-4">
@@ -345,27 +374,74 @@ function SessionList({
         </div>
       </div>
 
-      <div className="border-t border-neutral-200 px-4 py-3">
-        <div className="flex items-center gap-3 rounded-lg p-2">
-          <span className="grid size-9 place-items-center rounded-full bg-neutral-950 text-xs font-bold text-white">
-            {getUserInitials(user)}
+      <div className="relative border-t border-neutral-200 px-4 py-3">
+        {settingsMenuOpen ? (
+          <div className="absolute bottom-[76px] left-4 right-4 overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-[0_22px_60px_rgba(0,0,0,0.14)]">
+            <div className="flex items-center gap-3 px-3 py-3 text-neutral-500">
+              <span className="grid size-7 place-items-center rounded-full bg-neutral-100 text-neutral-500">
+                <UserRound size={16} />
+              </span>
+              <span className="min-w-0 truncate text-sm">{username}</span>
+            </div>
+            <button
+              className="flex h-11 w-full items-center gap-3 px-3 text-left text-sm font-medium text-neutral-500 transition hover:bg-neutral-50 hover:text-neutral-950"
+              onClick={() => openSettingsView('account')}
+              type="button"
+            >
+              <UserRound size={18} />
+              个人账户
+            </button>
+            <div className="mx-3 border-t border-neutral-100" />
+            <button
+              className="flex h-11 w-full items-center gap-3 px-3 text-left text-sm font-semibold text-neutral-950 transition hover:bg-neutral-50"
+              onClick={() => openSettingsView('providers')}
+              type="button"
+            >
+              <Settings size={18} />
+              设置
+            </button>
+            <div className="mx-3 border-t border-neutral-100" />
+            <button
+              className="flex h-11 w-full items-center gap-3 px-3 text-left text-sm font-medium text-neutral-600 transition hover:bg-neutral-50"
+              onClick={() => openSettingsView('providers')}
+              type="button"
+            >
+              <KeyRound size={18} />
+              API Key 管理
+              <ChevronRight className="ml-auto text-neutral-400" size={17} />
+            </button>
+            <button
+              className="flex h-11 w-full items-center gap-3 px-3 text-left text-sm font-medium text-neutral-500"
+              type="button"
+            >
+              <Gauge size={18} />
+              剩余用量
+              <ChevronRight className="ml-auto text-neutral-300" size={17} />
+            </button>
+            <button
+              className="flex h-11 w-full items-center gap-3 px-3 text-left text-sm font-medium text-neutral-700 transition hover:bg-red-50 hover:text-red-600"
+              onClick={onLogout}
+              type="button"
+            >
+              <LogOut size={18} />
+              退出登录
+            </button>
+          </div>
+        ) : null}
+
+        <button
+          className="flex h-12 w-full items-center gap-3 rounded-lg px-3 text-left text-neutral-950 transition hover:bg-white hover:shadow-sm"
+          onClick={() => setSettingsMenuOpen((current) => !current)}
+          type="button"
+        >
+          <span className="grid size-9 place-items-center rounded-lg bg-white text-neutral-950 shadow-sm ring-1 ring-neutral-200">
+            <Settings size={20} />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-semibold text-neutral-950">
-              {user?.displayName || user?.username || 'AgentHub'}
-            </span>
-            <span className="block truncate text-xs text-neutral-500">API {config.apiUrl}</span>
+            <span className="block truncate text-base font-semibold">设置</span>
+            <span className="block truncate text-xs text-neutral-500">{displayName}</span>
           </span>
-          <button
-            aria-label="退出登录"
-            className="grid size-9 place-items-center rounded-lg text-neutral-500 transition hover:bg-white hover:text-neutral-950"
-            onClick={onLogout}
-            title="退出登录"
-            type="button"
-          >
-            <LogOut size={18} />
-          </button>
-        </div>
+        </button>
       </div>
     </aside>
   );
@@ -487,7 +563,6 @@ function ChatArea({
   loading,
   members,
   messages,
-  onOpenSettings,
   selectedSession,
 }: {
   agents: AgentResponse[];
@@ -495,7 +570,6 @@ function ChatArea({
   loading: boolean;
   members: SessionMemberResponse[];
   messages: MessageResponse[];
-  onOpenSettings: () => void;
   selectedSession: SessionResponse | null;
 }) {
   const memberNames = members.map((member) => member.name).join('、');
@@ -530,14 +604,6 @@ function ChatArea({
             <Wifi size={14} />
             WS
           </span>
-          <button
-            aria-label="设置"
-            className="grid size-9 place-items-center rounded-lg text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-950"
-            onClick={onOpenSettings}
-            type="button"
-          >
-            <Settings size={19} />
-          </button>
         </div>
       </header>
 
@@ -1018,6 +1084,529 @@ function SettingsPanel({ onClose, open }: { onClose: () => void; open: boolean }
   );
 }
 
+function SettingsDialog({
+  initialView,
+  onClose,
+  onLogout,
+  onUpdateProfile,
+  open,
+  user,
+}: {
+  initialView: SettingsView;
+  onClose: () => void;
+  onLogout: () => void;
+  onUpdateProfile: (profile: UpdateUserRequest) => Promise<void>;
+  open: boolean;
+  user: UserInfo | null;
+}) {
+  const [providers, setProviders] = useState<ProviderResponse[]>([]);
+  const [form, setForm] = useState<ProviderFormState>(() => createProviderForm());
+  const [profileForm, setProfileForm] = useState<ProfileFormState>(() => createProfileForm(user));
+  const [activeView, setActiveView] = useState<SettingsView>(initialView);
+  const [providerDialogOpen, setProviderDialogOpen] = useState(false);
+  const [providerDialogMode, setProviderDialogMode] = useState<ProviderDialogMode>('create');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
+
+  const loadProviders = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      setProviders(await agentHubApi.getProviders());
+    } catch (reason) {
+      setError(toErrorMessage(reason));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      setActiveView(initialView);
+      setProfileForm(createProfileForm(user));
+      void loadProviders();
+    }
+  }, [initialView, loadProviders, open, user]);
+
+  const resetForm = useCallback(() => {
+    setEditingId(null);
+    setForm(createProviderForm());
+    setError(null);
+  }, []);
+
+  const closeProviderDialog = () => {
+    setProviderDialogOpen(false);
+    resetForm();
+  };
+
+  const startCreate = () => {
+    setProviderDialogMode('create');
+    setEditingId(null);
+    setForm(createProviderForm());
+    setError(null);
+    setProviderDialogOpen(true);
+  };
+
+  const handleProviderTypeChange = (providerType: ProviderType) => {
+    setForm((current) => ({
+      ...current,
+      providerType,
+      defaultModel:
+        current.defaultModel === providerDefaults[current.providerType] ? providerDefaults[providerType] : current.defaultModel,
+    }));
+  };
+
+  const startEdit = (provider: ProviderResponse) => {
+    setProviderDialogMode('edit');
+    setEditingId(provider.id);
+    setError(null);
+    setForm({
+      providerType: provider.providerType,
+      apiKey: '',
+      baseUrl: provider.baseUrl ?? '',
+      defaultModel: provider.defaultModel,
+      isDefault: provider.isDefault,
+    });
+    setProviderDialogOpen(true);
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSaving(true);
+    setError(null);
+
+    const apiKey = form.apiKey.trim();
+    const body = {
+      providerType: form.providerType,
+      baseUrl: form.baseUrl.trim() || null,
+      defaultModel: form.defaultModel.trim(),
+      isDefault: form.isDefault,
+    };
+
+    try {
+      if (editingId) {
+        await agentHubApi.updateProvider(editingId, apiKey ? { ...body, apiKey } : body);
+      } else {
+        if (!apiKey) {
+          setError('API Key 不能为空');
+          return;
+        }
+
+        await agentHubApi.createProvider({ ...body, apiKey });
+      }
+
+      resetForm();
+      setProviderDialogOpen(false);
+      await loadProviders();
+    } catch (reason) {
+      setError(toErrorMessage(reason));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleProfileSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setProfileSaving(true);
+    setProfileError(null);
+
+    try {
+      await onUpdateProfile({
+        displayName: profileForm.displayName.trim() || null,
+        avatarUrl: profileForm.avatarUrl.trim() || null,
+      });
+    } catch (reason) {
+      setProfileError(toErrorMessage(reason));
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
+  const handleDelete = async (provider: ProviderResponse) => {
+    if (typeof window !== 'undefined' && !window.confirm(`删除 ${providerTypeLabels[provider.providerType]} Provider？`)) {
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      await agentHubApi.deleteProvider(provider.id);
+      if (editingId === provider.id) {
+        resetForm();
+      }
+      await loadProviders();
+    } catch (reason) {
+      setError(toErrorMessage(reason));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center px-4 py-6">
+      <button
+        aria-label="关闭设置"
+        className="absolute inset-0 bg-neutral-950/25 backdrop-blur-[2px]"
+        onClick={onClose}
+        type="button"
+      />
+      <section className="relative flex max-h-[86vh] w-full max-w-[920px] overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-[0_30px_100px_rgba(0,0,0,0.18)]">
+        <aside className="hidden w-[248px] shrink-0 border-r border-neutral-200 bg-[#f6f6f3] p-4 md:block">
+          <div className="flex items-center gap-3 px-2 py-2">
+            {user?.avatarUrl ? (
+              <img alt="" className="size-10 rounded-full object-cover ring-1 ring-neutral-200" src={user.avatarUrl} />
+            ) : (
+              <span className="grid size-10 place-items-center rounded-full bg-neutral-950 text-xs font-bold text-white">
+                {getUserInitials(user)}
+              </span>
+            )}
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-semibold text-neutral-950">
+                {user?.displayName || user?.username || 'AgentHub'}
+              </span>
+              <span className="block truncate text-xs text-neutral-500">{user?.username || 'workspace'}</span>
+            </span>
+          </div>
+
+          <nav className="mt-5 space-y-1">
+            <button
+              className={`flex h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium transition ${
+                activeView === 'account' ? 'bg-white text-neutral-950 shadow-sm' : 'text-neutral-600 hover:bg-white/70'
+              }`}
+              onClick={() => setActiveView('account')}
+              type="button"
+            >
+              <UserRound size={18} />
+              个人信息
+            </button>
+            <button
+              className={`flex h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium transition ${
+                activeView === 'providers' ? 'bg-white text-neutral-950 shadow-sm' : 'text-neutral-600 hover:bg-white/70'
+              }`}
+              onClick={() => setActiveView('providers')}
+              type="button"
+            >
+              <KeyRound size={18} />
+              API Key 管理
+            </button>
+          </nav>
+
+          <button
+            className="mt-5 flex h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium text-neutral-600 transition hover:bg-red-50 hover:text-red-600"
+            onClick={onLogout}
+            type="button"
+          >
+            <LogOut size={18} />
+            退出登录
+          </button>
+        </aside>
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="flex h-20 shrink-0 items-center justify-between border-b border-neutral-200 px-5">
+            <div>
+              <p className="text-xl font-semibold text-neutral-950">设置</p>
+              <p className="mt-1 text-sm text-neutral-500">
+                {activeView === 'account' ? '个人信息' : 'API Key 管理'}
+              </p>
+            </div>
+            <button
+              aria-label="关闭设置"
+              className="grid size-10 place-items-center rounded-lg text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-950"
+              onClick={onClose}
+              type="button"
+            >
+              <X size={22} />
+            </button>
+          </header>
+
+          <div className="flex gap-2 border-b border-neutral-200 px-5 py-3 md:hidden">
+            <button
+              className={`flex h-9 flex-1 items-center justify-center gap-2 rounded-lg text-sm font-medium ${
+                activeView === 'account' ? 'bg-neutral-950 text-white' : 'text-neutral-600 hover:bg-neutral-100'
+              }`}
+              onClick={() => setActiveView('account')}
+              type="button"
+            >
+              <UserRound size={16} />
+              个人信息
+            </button>
+            <button
+              className={`flex h-9 flex-1 items-center justify-center gap-2 rounded-lg text-sm font-medium ${
+                activeView === 'providers' ? 'bg-neutral-950 text-white' : 'text-neutral-600 hover:bg-neutral-100'
+              }`}
+              onClick={() => setActiveView('providers')}
+              type="button"
+            >
+              <KeyRound size={16} />
+              API Key
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto bg-[#fbfbfa] p-5">
+            {activeView === 'account' ? (
+              <form className="mx-auto max-w-xl rounded-lg border border-neutral-200 bg-white p-5 shadow-sm" onSubmit={handleProfileSubmit}>
+                <div className="mb-5 flex items-center gap-4">
+                  {profileForm.avatarUrl ? (
+                    <img
+                      alt=""
+                      className="size-16 rounded-full object-cover ring-1 ring-neutral-200"
+                      src={profileForm.avatarUrl}
+                    />
+                  ) : (
+                    <span className="grid size-16 place-items-center rounded-full bg-neutral-950 text-sm font-bold text-white">
+                      {getUserInitials(user)}
+                    </span>
+                  )}
+                  <div>
+                    <p className="text-base font-semibold text-neutral-950">个人信息</p>
+                    <p className="mt-1 text-sm text-neutral-500">昵称和头像会用于工作台展示。</p>
+                  </div>
+                </div>
+
+                {profileError ? (
+                  <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    {profileError}
+                  </div>
+                ) : null}
+
+                <label className="block">
+                  <span className="text-sm font-medium text-neutral-800">昵称</span>
+                  <input
+                    className="mt-2 h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-950 outline-none transition placeholder:text-neutral-400 focus:border-neutral-950 focus:ring-2 focus:ring-[#c6f56f]/70"
+                    maxLength={50}
+                    onChange={(event) => setProfileForm((current) => ({ ...current, displayName: event.target.value }))}
+                    placeholder={user?.username || 'AgentHub'}
+                    value={profileForm.displayName}
+                  />
+                </label>
+
+                <label className="mt-4 block">
+                  <span className="text-sm font-medium text-neutral-800">头像 URL</span>
+                  <input
+                    className="mt-2 h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-950 outline-none transition placeholder:text-neutral-400 focus:border-neutral-950 focus:ring-2 focus:ring-[#c6f56f]/70"
+                    maxLength={500}
+                    onChange={(event) => setProfileForm((current) => ({ ...current, avatarUrl: event.target.value }))}
+                    placeholder="https://..."
+                    value={profileForm.avatarUrl}
+                  />
+                </label>
+
+                <button
+                  className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-neutral-950 px-4 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-300"
+                  disabled={profileSaving}
+                  type="submit"
+                >
+                  <Save size={17} />
+                  {profileSaving ? '保存中' : '保存个人信息'}
+                </button>
+              </form>
+            ) : (
+              <section>
+                <div className="mb-5 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-400">Providers</p>
+                    <p className="mt-1 text-sm text-neutral-500">管理 OpenAI、Anthropic 或兼容接口的 API Key。</p>
+                  </div>
+                  <button
+                    className="flex h-10 items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 text-sm font-semibold text-neutral-800 shadow-sm transition hover:bg-neutral-50"
+                    onClick={startCreate}
+                    type="button"
+                  >
+                    <PlusCircle size={17} />
+                    新增
+                  </button>
+                </div>
+
+                {error && !providerDialogOpen ? (
+                  <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    {error}
+                  </div>
+                ) : null}
+
+                {loading ? <SkeletonRows count={2} /> : null}
+
+                {!loading && providers.length === 0 ? (
+                  <EmptyState detail="点击新增配置第一个 Provider，它会自动成为默认项。" title="暂无 Provider" />
+                ) : null}
+
+                {!loading && providers.length > 0 ? (
+                  <div className="space-y-3">
+                    {providers.map((provider) => (
+                      <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm" key={provider.id}>
+                        <div className="flex items-center gap-4">
+                          <span className="grid size-12 shrink-0 place-items-center rounded-lg bg-neutral-100 text-neutral-700">
+                            <Server size={22} />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="text-base font-semibold text-neutral-950">
+                                {providerTypeLabels[provider.providerType]}
+                              </p>
+                              {provider.isDefault ? (
+                                <span className="flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
+                                  <BadgeCheck size={13} />
+                                  默认
+                                </span>
+                              ) : null}
+                            </div>
+                            <p className="mt-1 truncate text-sm text-neutral-500">{provider.defaultModel}</p>
+                            {provider.baseUrl ? (
+                              <p className="mt-1 truncate text-sm text-neutral-400">{provider.baseUrl}</p>
+                            ) : null}
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <button
+                              aria-label="编辑 Provider"
+                              className="grid size-9 place-items-center rounded-lg text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-950"
+                              onClick={() => startEdit(provider)}
+                              type="button"
+                            >
+                              <Pencil size={18} />
+                            </button>
+                            <button
+                              aria-label="删除 Provider"
+                              className="grid size-9 place-items-center rounded-lg text-neutral-500 transition hover:bg-red-50 hover:text-red-600"
+                              disabled={saving}
+                              onClick={() => void handleDelete(provider)}
+                              type="button"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </section>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {providerDialogOpen ? (
+        <div className="fixed inset-0 z-[60] grid place-items-center px-4">
+          <button
+            aria-label="关闭 Provider 表单"
+            className="absolute inset-0 bg-neutral-950/30"
+            onClick={closeProviderDialog}
+            type="button"
+          />
+          <form
+            className="relative w-full max-w-[560px] rounded-lg border border-neutral-200 bg-white p-5 shadow-[0_30px_100px_rgba(0,0,0,0.20)]"
+            onSubmit={handleSubmit}
+          >
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <p className="text-lg font-semibold text-neutral-950">
+                  {providerDialogMode === 'edit' ? '编辑 Provider' : '新增 Provider'}
+                </p>
+                <p className="mt-1 text-sm text-neutral-500">
+                  {providerDialogMode === 'edit' ? 'API Key 留空会保留旧值。' : '保存后会写入加密密钥。'}
+                </p>
+              </div>
+              <button
+                aria-label="关闭 Provider 表单"
+                className="grid size-9 place-items-center rounded-lg text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-950"
+                onClick={closeProviderDialog}
+                type="button"
+              >
+                <X size={19} />
+              </button>
+            </div>
+
+            {error ? (
+              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {error}
+              </div>
+            ) : null}
+
+            <label className="block">
+              <span className="text-sm font-medium text-neutral-800">类型</span>
+              <select
+                className="mt-2 h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-950 outline-none transition focus:border-neutral-950 focus:ring-2 focus:ring-[#c6f56f]/70"
+                onChange={(event) => handleProviderTypeChange(event.target.value as ProviderType)}
+                value={form.providerType}
+              >
+                {Object.entries(providerTypeLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="mt-4 block">
+              <span className="text-sm font-medium text-neutral-800">默认模型</span>
+              <input
+                className="mt-2 h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-950 outline-none transition placeholder:text-neutral-400 focus:border-neutral-950 focus:ring-2 focus:ring-[#c6f56f]/70"
+                maxLength={100}
+                onChange={(event) => setForm((current) => ({ ...current, defaultModel: event.target.value }))}
+                placeholder={providerDefaults[form.providerType]}
+                required
+                value={form.defaultModel}
+              />
+            </label>
+
+            <label className="mt-4 block">
+              <span className="text-sm font-medium text-neutral-800">API Key</span>
+              <input
+                className="mt-2 h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-950 outline-none transition placeholder:text-neutral-400 focus:border-neutral-950 focus:ring-2 focus:ring-[#c6f56f]/70"
+                maxLength={500}
+                onChange={(event) => setForm((current) => ({ ...current, apiKey: event.target.value }))}
+                placeholder={providerDialogMode === 'edit' ? '留空则保留当前 Key' : 'sk-...'}
+                required={providerDialogMode === 'create'}
+                type="password"
+                value={form.apiKey}
+              />
+            </label>
+
+            <label className="mt-4 block">
+              <span className="text-sm font-medium text-neutral-800">Base URL</span>
+              <input
+                className="mt-2 h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-950 outline-none transition placeholder:text-neutral-400 focus:border-neutral-950 focus:ring-2 focus:ring-[#c6f56f]/70"
+                maxLength={500}
+                onChange={(event) => setForm((current) => ({ ...current, baseUrl: event.target.value }))}
+                placeholder={form.providerType === 'CUSTOM' ? 'https://api.example.com/v1' : '可选'}
+                value={form.baseUrl}
+              />
+            </label>
+
+            <label className="mt-4 flex items-center gap-2 text-sm font-medium text-neutral-800">
+              <input
+                checked={form.isDefault}
+                className="size-4 rounded border-neutral-300 text-neutral-950 accent-neutral-950"
+                onChange={(event) => setForm((current) => ({ ...current, isDefault: event.target.checked }))}
+                type="checkbox"
+              />
+              设为默认 Provider
+            </label>
+
+            <button
+              className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-neutral-950 px-4 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-300"
+              disabled={saving || !form.defaultModel.trim() || (providerDialogMode === 'create' && !form.apiKey.trim())}
+              type="submit"
+            >
+              <Save size={17} />
+              {saving ? '保存中' : '保存'}
+            </button>
+          </form>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 type RoutePath = '/' | '/login' | '/register';
 
 const getRoutePath = (): RoutePath => {
@@ -1032,13 +1621,22 @@ const getRoutePath = (): RoutePath => {
   return '/';
 };
 
-function WorkspaceApp({ onLogout, user }: { onLogout: () => void; user: UserInfo | null }) {
+function WorkspaceApp({
+  onLogout,
+  onUpdateProfile,
+  user,
+}: {
+  onLogout: () => void;
+  onUpdateProfile: (profile: UpdateUserRequest) => Promise<void>;
+  user: UserInfo | null;
+}) {
   const [agents, setAgents] = useState<AgentResponse[]>([]);
   const [sessions, setSessions] = useState<SessionResponse[]>([]);
   const [members, setMembers] = useState<SessionMemberResponse[]>([]);
   const [messages, setMessages] = useState<MessageResponse[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsView, setSettingsView] = useState<SettingsView>('providers');
   const [loadingIndex, setLoadingIndex] = useState(true);
   const [loadingConversation, setLoadingConversation] = useState(false);
   const [errors, setErrors] = useState<ApiErrors>({});
@@ -1149,6 +1747,11 @@ function WorkspaceApp({ onLogout, user }: { onLogout: () => void; user: UserInfo
     [members, messages],
   );
 
+  const openSettings = (view: SettingsView) => {
+    setSettingsView(view);
+    setSettingsOpen(true);
+  };
+
   return (
     <main className="h-screen overflow-hidden bg-white text-neutral-950">
       <div className="h-screen lg:grid lg:grid-cols-[304px_minmax(0,1fr)] xl:grid-cols-[304px_minmax(0,1fr)_408px]">
@@ -1157,6 +1760,7 @@ function WorkspaceApp({ onLogout, user }: { onLogout: () => void; user: UserInfo
           errors={errors}
           loading={loadingIndex}
           onLogout={onLogout}
+          onOpenSettings={openSettings}
           onSelect={setSelectedSessionId}
           selectedSessionId={selectedSessionId}
           sessions={sessions}
@@ -1168,18 +1772,24 @@ function WorkspaceApp({ onLogout, user }: { onLogout: () => void; user: UserInfo
           loading={loadingConversation}
           members={members}
           messages={messages}
-          onOpenSettings={() => setSettingsOpen(true)}
           selectedSession={selectedSession}
         />
         <WorkspacePanel codeBlocks={codeBlocks} />
       </div>
-      <SettingsPanel onClose={() => setSettingsOpen(false)} open={settingsOpen} />
+      <SettingsDialog
+        initialView={settingsView}
+        onClose={() => setSettingsOpen(false)}
+        onLogout={onLogout}
+        onUpdateProfile={onUpdateProfile}
+        open={settingsOpen}
+        user={user}
+      />
     </main>
   );
 }
 
 function RoutedApp() {
-  const { initializing, isAuthenticated, logout, user } = useAuth();
+  const { initializing, isAuthenticated, logout, updateProfile, user } = useAuth();
   const [route, setRoute] = useState<RoutePath>(() => getRoutePath());
 
   const navigate = useCallback((path: RoutePath, mode: 'push' | 'replace' = 'push') => {
@@ -1229,6 +1839,7 @@ function RoutedApp() {
         logout();
         navigate('/login');
       }}
+      onUpdateProfile={updateProfile}
       user={user}
     />
   );

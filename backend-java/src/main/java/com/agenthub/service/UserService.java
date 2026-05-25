@@ -2,11 +2,13 @@ package com.agenthub.service;
 
 import com.agenthub.auth.CurrentUser;
 import com.agenthub.common.BusinessException;
+import com.agenthub.dto.request.UpdateUserRequest;
 import com.agenthub.dto.response.UserResponse;
 import com.agenthub.mapper.UserMapper;
 import com.agenthub.model.User;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UserService {
@@ -20,6 +22,19 @@ public class UserService {
   }
 
   public UserResponse getCurrentUser() {
+    return UserResponse.from(requireCurrentUser());
+  }
+
+  @Transactional
+  public UserResponse updateCurrentUser(UpdateUserRequest request) {
+    User user = requireCurrentUser();
+    user.setDisplayName(normalizeOptionalText(request.displayName()));
+    user.setAvatarUrl(normalizeOptionalText(request.avatarUrl()));
+    userMapper.update(user);
+    return UserResponse.from(userMapper.findById(user.getId()));
+  }
+
+  private User requireCurrentUser() {
     String userId = CurrentUser.get();
     if (userId == null || userId.isBlank()) {
       throw new BusinessException(HttpStatus.UNAUTHORIZED, UNAUTHORIZED_CODE, "unauthorized");
@@ -30,6 +45,14 @@ public class UserService {
       throw new BusinessException(HttpStatus.NOT_FOUND, USER_NOT_FOUND_CODE, "user not found");
     }
 
-    return UserResponse.from(user);
+    return user;
+  }
+
+  private String normalizeOptionalText(String value) {
+    if (value == null || value.isBlank()) {
+      return null;
+    }
+
+    return value.trim();
   }
 }

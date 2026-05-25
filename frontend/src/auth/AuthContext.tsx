@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { agentHubApi, clearAuthToken, getStoredToken, persistAuthToken } from '../shared/api';
-import type { LoginRequest, RegisterRequest, UserInfo } from '../shared/types';
+import type { LoginRequest, RegisterRequest, UpdateUserRequest, UserInfo } from '../shared/types';
 
 type AuthContextValue = {
   token: string | null;
@@ -10,6 +10,7 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   login: (credentials: LoginRequest) => Promise<void>;
   register: (credentials: RegisterRequest) => Promise<void>;
+  updateProfile: (profile: UpdateUserRequest) => Promise<void>;
   logout: () => void;
 };
 
@@ -83,6 +84,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(response.user);
   }, []);
 
+  const updateProfile = useCallback(async (profile: UpdateUserRequest) => {
+    const nextUser = await agentHubApi.updateCurrentUser(profile);
+    setUser(nextUser);
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       token,
@@ -91,9 +97,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: Boolean(token && user),
       login,
       register,
+      updateProfile,
       logout,
     }),
-    [initializing, login, logout, register, token, user],
+    [initializing, login, logout, register, token, updateProfile, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

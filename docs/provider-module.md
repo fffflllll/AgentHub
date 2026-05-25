@@ -14,7 +14,10 @@
 - 第一个 Provider 自动成为默认 Provider。
 - 设置某个 Provider 为默认时，会清理同一用户其他默认 Provider。
 - 删除默认 Provider 后，如果还有其他 Provider，会自动挑一个替代默认 Provider。
-- 前端工作台右上角设置按钮可打开 Provider 设置抽屉，支持列表、新增、编辑、删除。
+- 前端工作台左下角设置按钮可打开账号菜单，菜单内进入设置中心。
+- 设置中心包含个人信息、API Key 管理和退出登录入口。
+- API Key 管理支持 Provider 列表、新增、编辑、删除；新增/编辑均使用居中模态框。
+- 个人信息支持昵称和头像 URL 编辑，调用 `PUT /api/users/me` 保存。
 
 当前未落地：
 
@@ -22,7 +25,7 @@
 - 内部凭据解析接口：`/internal/providers/{id}/credentials:resolve` 还未实现。
 - Provider 连通性测试按钮还未实现。
 - Python AI 调 LLM 时解析 Provider 的流程还未实现。
-- 前端还没有独立设置路由，当前是工作台内的设置抽屉。
+- 前端还没有独立设置路由，当前是工作台内的居中设置窗口。
 
 ## 2. 相关文件
 
@@ -38,7 +41,8 @@
 | 响应 DTO | `ProviderResponse.java` |
 | 数据库迁移 | `backend-java/src/main/resources/db/migration/V1__init_schema.sql` |
 | 配置 | `backend-java/src/main/resources/application.yml`, `.env.example`, `docker-compose.yml` |
-| 前端入口 | `frontend/src/App.tsx` 的 `SettingsPanel` |
+| 用户资料接口 | `backend-java/src/main/java/com/agenthub/controller/UserController.java`, `UserService.java`, `UpdateUserRequest.java` |
+| 前端入口 | `frontend/src/App.tsx` 的左下角设置按钮、账号菜单、`SettingsDialog` |
 | 前端 API | `frontend/src/shared/api.ts` |
 | 前端类型 | `frontend/src/shared/types.ts` |
 | 进度记录 | `process.md` |
@@ -228,14 +232,17 @@ v1:<base64 nonce>:<base64 ciphertext+tag>
 
 ## 6. 前端实现
 
-当前 Provider 前端集成在 `frontend/src/App.tsx` 的 `SettingsPanel` 组件中。
+当前 Provider 前端集成在 `frontend/src/App.tsx` 的左下角设置入口和 `SettingsDialog` 中。
 
 入口：
 
 - 登录后进入工作台。
-- 点击聊天区右上角的设置按钮。
-- 打开右侧设置抽屉。
-- 抽屉内展示 Provider 列表和 Provider 表单。
+- 点击左侧栏底部的“设置”按钮。
+- 弹出账号菜单，菜单内有当前用户、个人账户、设置、API Key 管理、剩余用量、退出登录。
+- 点击“设置”或“API Key 管理”打开居中的设置窗口。
+- 设置窗口左侧为导航，右侧显示个人信息或 API Key 管理。
+- 点击 Provider 列表上的“新增”会打开居中 Provider 表单。
+- 点击 Provider 卡片的编辑图标也会打开居中 Provider 表单，并带入当前配置。
 
 前端类型位于 `frontend/src/shared/types.ts`：
 
@@ -253,26 +260,33 @@ updateProvider(id, body)
 deleteProvider(id)
 ```
 
-`SettingsPanel` 内部状态：
+`SettingsDialog` 内部状态：
 
 | 状态 | 说明 |
 | --- | --- |
 | `providers` | 当前用户 Provider 列表 |
 | `form` | 表单值，包括类型、API Key、Base URL、默认模型、是否默认 |
+| `profileForm` | 个人信息表单，包括昵称和头像 URL |
+| `activeView` | 当前设置页，`account` 或 `providers` |
+| `providerDialogOpen` | Provider 新增/编辑模态框是否打开 |
+| `providerDialogMode` | Provider 表单模式：新增或编辑 |
 | `editingId` | 当前正在编辑的 Provider ID，`null` 表示新增 |
 | `loading` | 列表加载状态 |
 | `saving` | 保存或删除状态 |
+| `profileSaving` | 个人信息保存状态 |
 | `error` | 接口错误提示 |
+| `profileError` | 个人信息错误提示 |
 
 交互规则：
 
-- 打开设置抽屉时调用 `getProviders()`。
-- 点击“新增”会重置表单。
+- 打开设置窗口时调用 `getProviders()`，同时用当前用户信息初始化个人信息表单。
+- 点击“新增”会重置 Provider 表单并打开居中模态框。
 - 点击编辑图标会把 Provider 的类型、Base URL、默认模型、默认状态带入表单。
 - 编辑时 API Key 不会回填；用户留空则后端保留旧 Key。
 - 新增时 API Key 必填。
 - 删除前使用浏览器 `confirm()` 做一次确认。
 - 保存成功后重新加载 Provider 列表。
+- 个人信息保存调用 `updateCurrentUser()`，成功后刷新 `AuthContext` 中的用户信息。
 
 默认模型前端预填：
 
@@ -305,12 +319,15 @@ docker compose up --build
 1. 打开 `http://localhost:3000`。
 2. 注册或登录。
 3. 进入工作台。
-4. 点击右上角设置按钮。
-5. 新增 OpenAI 或 Anthropic Provider。
-6. 检查列表中不会显示 API Key。
-7. 编辑 Provider，留空 API Key 保存，确认旧 Key 不会被清空。
-8. 新增第二个 Provider 并设为默认，确认列表中默认标记切换。
-9. 删除默认 Provider，确认另一个 Provider 自动变成默认。
+4. 点击左侧栏底部“设置”按钮，确认弹出账号菜单。
+5. 点击“个人账户”，修改昵称或头像 URL 并保存。
+6. 再次打开左下角菜单，点击“API Key 管理”。
+7. 点击新增，确认打开居中的 Provider 表单。
+8. 新增 OpenAI 或 Anthropic Provider。
+9. 检查列表中不会显示 API Key。
+10. 点击编辑图标，确认同样打开居中表单；留空 API Key 保存，确认旧 Key 不会被清空。
+11. 新增第二个 Provider 并设为默认，确认列表中默认标记切换。
+12. 删除默认 Provider，确认另一个 Provider 自动变成默认。
 
 ### 7.3 curl 验证
 
@@ -356,6 +373,8 @@ cd frontend && npm run build
 
 - Java 编译通过；当前无测试源。
 - 前端 TypeScript 和 Vite build 通过。
+
+2026-05-25 前端设置体验优化后再次执行上述两条命令，均通过。
 
 ## 9. 常见问题
 
@@ -406,5 +425,8 @@ Provider 只是模型凭据配置。完整单 Agent 对话还需要：
 - `/api/providers` 是否被 JWT 拦截器保护。
 - `ProviderResponse` 是否仍然不包含任何密钥字段。
 - `user_providers` 默认 Provider 唯一索引是否在目标 MySQL 版本正常执行。
+- 左下角设置入口和账号菜单是否仍然可进入个人信息与 API Key 管理。
+- Provider 新增/编辑是否仍然使用居中模态框。
 - 前端编辑 Provider 时是否仍然保持“API Key 留空即不更新”的语义。
+- 个人信息保存后 `AuthContext.user` 是否更新，左下角菜单展示是否同步。
 - 后续实现内部凭据解析接口时，不要把明文 API Key 写入 Redis Stream、日志或前端响应。
