@@ -67,6 +67,8 @@
 | 2026-05-24 | M1.1.5 | 补齐 `GET /api/agents`、`GET /api/sessions` 空列表兜底和静态资源 404 处理后执行 `mvn test` | 通过（无测试源，编译通过） |
 | 2026-05-25 | M1.2 | `backend-java` 执行 `mvn test` | 通过（无测试源，编译通过） |
 | 2026-05-25 | M1.2 | `frontend` 执行 `npm run build` | 通过 |
+| 2026-05-25 | M1.2 前端设置体验优化 | `backend-java` 执行 `mvn test` | 通过（无测试源，编译通过） |
+| 2026-05-25 | M1.2 前端设置体验优化 | `frontend` 执行 `npm run build` | 通过 |
 
 ## 阻塞项
 

@@ -9,6 +9,7 @@
 - 用户注册：`POST /api/auth/register`
 - 用户登录：`POST /api/auth/login`
 - 当前用户：`GET /api/users/me`
+- 更新当前用户：`PUT /api/users/me`
 - JWT 签发与校验：`JwtTokenProvider`
 - HTTP API 鉴权拦截：`JwtAuthInterceptor`
 - 当前用户上下文：`CurrentUser`
@@ -17,7 +18,6 @@
 
 当前未落地：
 
-- `PUT /api/users/me`
 - WebSocket `auth.init` 首包鉴权
 - Spring Security 集成；项目明确使用自研轻量 JWT，不引入 Spring Security
 
@@ -31,7 +31,7 @@
 | HTTP 拦截器 | `backend-java/src/main/java/com/agenthub/auth/JwtAuthInterceptor.java` |
 | 当前用户上下文 | `backend-java/src/main/java/com/agenthub/auth/CurrentUser.java` |
 | MVC 配置 | `backend-java/src/main/java/com/agenthub/config/WebMvcConfig.java` |
-| 请求 DTO | `backend-java/src/main/java/com/agenthub/dto/request/LoginRequest.java`, `RegisterRequest.java` |
+| 请求 DTO | `backend-java/src/main/java/com/agenthub/dto/request/LoginRequest.java`, `RegisterRequest.java`, `UpdateUserRequest.java` |
 | 响应 DTO | `backend-java/src/main/java/com/agenthub/dto/response/AuthResponse.java`, `UserResponse.java` |
 | 用户模型 | `backend-java/src/main/java/com/agenthub/model/User.java` |
 | 用户 Mapper | `backend-java/src/main/java/com/agenthub/mapper/UserMapper.java`, `backend-java/src/main/resources/mapper/UserMapper.xml` |
@@ -169,6 +169,32 @@ Authorization: Bearer <jwt>
 7. 用户不存在时，返回 404 / code 40401 / `user not found`。
 8. 成功时返回 `UserResponse`，不包含 `passwordHash`。
 
+### 4.4 更新当前用户
+
+```http
+PUT /api/users/me
+Authorization: Bearer <jwt>
+Content-Type: application/json
+```
+
+请求体：
+
+```json
+{
+  "displayName": "新的昵称",
+  "avatarUrl": "https://example.com/avatar.png"
+}
+```
+
+处理逻辑：
+
+1. 该接口同样需要经过 `JwtAuthInterceptor`。
+2. `UserController.updateMe()` 接收 `UpdateUserRequest`，使用 `@Valid` 触发 Bean Validation。
+3. `UserService.updateCurrentUser()` 查询当前用户。
+4. `displayName` 和 `avatarUrl` 会执行 `trim()`；空字符串会写为 `null`。
+5. 调用 `UserMapper.update(user)` 更新 `users.display_name` 和 `users.avatar_url`。
+6. 返回更新后的 `UserResponse`，供前端刷新 `AuthContext.user`。
+
 ## 5. 请求参数校验
 
 ### 5.1 `RegisterRequest`
@@ -187,6 +213,13 @@ Authorization: Bearer <jwt>
 | `password` | `@NotBlank`, 长度 8 到 100 |
 
 登录不强制密码必须包含字母和数字，因为已有用户的密码策略可能随版本变化；当前注册才应用复杂度规则。
+
+### 5.3 `UpdateUserRequest`
+
+| 字段 | 规则 |
+| --- | --- |
+| `displayName` | 可空，最大长度 50 |
+| `avatarUrl` | 可空，最大长度 500 |
 
 ## 6. 响应模型
 

@@ -28,6 +28,11 @@ export type RegisterRequest = {
   password: string;
 };
 
+export type UpdateUserRequest = {
+  displayName?: string | null;
+  avatarUrl?: string | null;
+};
+
 export type AuthResponse = {
   token: string;
   user: UserInfo;
