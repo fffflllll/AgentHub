@@ -50,59 +50,59 @@ function AuthLogo() {
 
 function BlueprintPanel() {
   return (
-    <aside className="relative hidden min-h-screen overflow-hidden bg-[#10120f] text-white lg:block">
+    <aside className="relative hidden min-h-screen overflow-hidden border-l border-neutral-200 bg-[#eef2e8] text-neutral-950 lg:block">
       <div
-        className="absolute inset-0 opacity-[0.28]"
+        className="absolute inset-0"
         style={{
           backgroundImage:
-            'linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px)',
+            'linear-gradient(rgba(20,24,18,0.055) 1px, transparent 1px), linear-gradient(90deg, rgba(20,24,18,0.055) 1px, transparent 1px)',
           backgroundSize: '32px 32px',
         }}
       />
       <div className="relative flex h-full flex-col justify-between p-8">
         <div className="flex items-center justify-between">
-          <span className="rounded-md border border-white/15 bg-white/10 px-2.5 py-1 text-xs font-medium text-white/75">
+          <span className="rounded-md border border-neutral-200 bg-white/75 px-2.5 py-1 text-xs font-medium text-neutral-500 shadow-sm">
             AUTH
           </span>
-          <span className="block h-2 w-16 rounded-full bg-[#c6f56f]" />
+          <span className="block h-2 w-16 rounded-full bg-[#b8e85f]" />
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-lg border border-white/12 bg-white/[0.06] p-4 shadow-2xl backdrop-blur">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <div className="rounded-lg border border-neutral-200 bg-white/75 p-4 shadow-[0_18px_50px_rgba(40,52,28,0.12)] backdrop-blur">
+            <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
               <div className="flex items-center gap-2">
                 <span className="grid size-8 place-items-center rounded-lg bg-[#c6f56f] text-neutral-950">
                   <ShieldCheck size={17} />
                 </span>
                 <span className="text-sm font-semibold">JWT Session</span>
               </div>
-              <span className="text-xs text-white/45">7d</span>
+              <span className="text-xs text-neutral-400">7d</span>
             </div>
             <div className="mt-4 grid gap-2">
-              <div className="h-2.5 w-4/5 rounded-full bg-white/18" />
-              <div className="h-2.5 w-2/3 rounded-full bg-white/12" />
-              <div className="h-2.5 w-5/6 rounded-full bg-white/12" />
+              <div className="h-2.5 w-4/5 rounded-full bg-neutral-200" />
+              <div className="h-2.5 w-2/3 rounded-full bg-neutral-100" />
+              <div className="h-2.5 w-5/6 rounded-full bg-neutral-100" />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-lg border border-white/12 bg-white/[0.06] p-4">
-              <Network className="text-[#7dd3fc]" size={20} />
-              <div className="mt-6 h-2 w-20 rounded-full bg-white/20" />
-              <div className="mt-2 h-2 w-12 rounded-full bg-white/12" />
+            <div className="rounded-lg border border-neutral-200 bg-white/65 p-4 shadow-sm">
+              <Network className="text-sky-500" size={20} />
+              <div className="mt-6 h-2 w-20 rounded-full bg-neutral-200" />
+              <div className="mt-2 h-2 w-12 rounded-full bg-neutral-100" />
             </div>
-            <div className="rounded-lg border border-white/12 bg-white/[0.06] p-4">
-              <KeyRound className="text-[#f5d06f]" size={20} />
-              <div className="mt-6 h-2 w-16 rounded-full bg-white/20" />
-              <div className="mt-2 h-2 w-24 rounded-full bg-white/12" />
+            <div className="rounded-lg border border-neutral-200 bg-white/65 p-4 shadow-sm">
+              <KeyRound className="text-amber-500" size={20} />
+              <div className="mt-6 h-2 w-16 rounded-full bg-neutral-200" />
+              <div className="mt-2 h-2 w-24 rounded-full bg-neutral-100" />
             </div>
           </div>
         </div>
 
-        <div className="rounded-lg border border-white/12 bg-white/[0.06] p-4">
+        <div className="rounded-lg border border-neutral-200 bg-white/65 p-4 shadow-sm">
           <div className="flex items-center gap-3">
-            <span className="size-2 rounded-full bg-emerald-300" />
-            <span className="text-xs font-medium uppercase text-white/55">ready for workspace</span>
+            <span className="size-2 rounded-full bg-emerald-400" />
+            <span className="text-xs font-medium uppercase text-neutral-500">ready for workspace</span>
           </div>
         </div>
       </div>
