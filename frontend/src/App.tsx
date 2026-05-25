@@ -1,6 +1,8 @@
 import type { LucideIcon } from 'lucide-react';
+import type { FormEvent } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  BadgeCheck,
   CheckCircle2,
   ChevronDown,
   Circle,
@@ -14,15 +16,21 @@ import {
   Menu,
   MessageSquarePlus,
   PanelLeft,
+  Pencil,
   Plus,
+  PlusCircle,
+  Save,
   Search,
   SendHorizontal,
+  Server,
   Settings,
   Sparkles,
   TestTube2,
+  Trash2,
   Users,
   Wifi,
   Workflow,
+  X,
 } from 'lucide-react';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import { AuthLoadingScreen, LoginPage, RegisterPage } from './auth/AuthPages';
@@ -32,6 +40,8 @@ import type {
   AgentResponse,
   MessageCodeBlockResponse,
   MessageResponse,
+  ProviderResponse,
+  ProviderType,
   SessionMemberResponse,
   SessionResponse,
   TaskItemResponse,
@@ -42,6 +52,7 @@ import type {
 
 type ApiErrors = {
   agents?: string;
+  providers?: string;
   sessions?: string;
   conversation?: string;
 };
@@ -55,6 +66,34 @@ type CodeBlockView = MessageCodeBlockResponse & {
   messageId: string;
   senderName: string;
 };
+
+type ProviderFormState = {
+  providerType: ProviderType;
+  apiKey: string;
+  baseUrl: string;
+  defaultModel: string;
+  isDefault: boolean;
+};
+
+const providerTypeLabels: Record<ProviderType, string> = {
+  OPENAI: 'OpenAI',
+  ANTHROPIC: 'Anthropic',
+  CUSTOM: 'Custom',
+};
+
+const providerDefaults: Record<ProviderType, string> = {
+  OPENAI: 'gpt-4o',
+  ANTHROPIC: 'claude-sonnet-4-20250514',
+  CUSTOM: 'gpt-4o',
+};
+
+const createProviderForm = (): ProviderFormState => ({
+  providerType: 'OPENAI',
+  apiKey: '',
+  baseUrl: '',
+  defaultModel: providerDefaults.OPENAI,
+  isDefault: true,
+});
 
 const agentVisuals: Record<string, AgentVisual> = {
   orchestrator: { icon: Workflow, accent: 'bg-violet-100 text-violet-700' },
@@ -448,6 +487,7 @@ function ChatArea({
   loading,
   members,
   messages,
+  onOpenSettings,
   selectedSession,
 }: {
   agents: AgentResponse[];
@@ -455,6 +495,7 @@ function ChatArea({
   loading: boolean;
   members: SessionMemberResponse[];
   messages: MessageResponse[];
+  onOpenSettings: () => void;
   selectedSession: SessionResponse | null;
 }) {
   const memberNames = members.map((member) => member.name).join('、');
@@ -492,6 +533,7 @@ function ChatArea({
           <button
             aria-label="设置"
             className="grid size-9 place-items-center rounded-lg text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-950"
+            onClick={onOpenSettings}
             type="button"
           >
             <Settings size={19} />
@@ -667,6 +709,315 @@ function WorkspacePanel({ codeBlocks }: { codeBlocks: CodeBlockView[] }) {
   );
 }
 
+function SettingsPanel({ onClose, open }: { onClose: () => void; open: boolean }) {
+  const [providers, setProviders] = useState<ProviderResponse[]>([]);
+  const [form, setForm] = useState<ProviderFormState>(() => createProviderForm());
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadProviders = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      setProviders(await agentHubApi.getProviders());
+    } catch (reason) {
+      setError(toErrorMessage(reason));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      void loadProviders();
+    }
+  }, [loadProviders, open]);
+
+  const resetForm = useCallback(() => {
+    setEditingId(null);
+    setForm(createProviderForm());
+    setError(null);
+  }, []);
+
+  const handleProviderTypeChange = (providerType: ProviderType) => {
+    setForm((current) => ({
+      ...current,
+      providerType,
+      defaultModel:
+        current.defaultModel === providerDefaults[current.providerType] ? providerDefaults[providerType] : current.defaultModel,
+    }));
+  };
+
+  const startEdit = (provider: ProviderResponse) => {
+    setEditingId(provider.id);
+    setError(null);
+    setForm({
+      providerType: provider.providerType,
+      apiKey: '',
+      baseUrl: provider.baseUrl ?? '',
+      defaultModel: provider.defaultModel,
+      isDefault: provider.isDefault,
+    });
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSaving(true);
+    setError(null);
+
+    const apiKey = form.apiKey.trim();
+    const body = {
+      providerType: form.providerType,
+      baseUrl: form.baseUrl.trim() || null,
+      defaultModel: form.defaultModel.trim(),
+      isDefault: form.isDefault,
+    };
+
+    try {
+      if (editingId) {
+        await agentHubApi.updateProvider(editingId, apiKey ? { ...body, apiKey } : body);
+      } else {
+        if (!apiKey) {
+          setError('API Key 不能为空');
+          return;
+        }
+
+        await agentHubApi.createProvider({ ...body, apiKey });
+      }
+
+      resetForm();
+      await loadProviders();
+    } catch (reason) {
+      setError(toErrorMessage(reason));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (provider: ProviderResponse) => {
+    if (typeof window !== 'undefined' && !window.confirm(`删除 ${providerTypeLabels[provider.providerType]} Provider？`)) {
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      await agentHubApi.deleteProvider(provider.id);
+      if (editingId === provider.id) {
+        resetForm();
+      }
+      await loadProviders();
+    } catch (reason) {
+      setError(toErrorMessage(reason));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50">
+      <button
+        aria-label="关闭设置"
+        className="absolute inset-0 bg-neutral-950/25"
+        onClick={onClose}
+        type="button"
+      />
+      <aside className="absolute right-0 top-0 flex h-full w-full max-w-[520px] flex-col border-l border-neutral-200 bg-[#fbfbfa] shadow-2xl">
+        <header className="flex h-16 items-center justify-between border-b border-neutral-200 bg-white px-5">
+          <div>
+            <p className="text-sm font-semibold text-neutral-950">设置</p>
+            <p className="text-xs text-neutral-500">Provider</p>
+          </div>
+          <button
+            aria-label="关闭设置"
+            className="grid size-9 place-items-center rounded-lg text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-950"
+            onClick={onClose}
+            type="button"
+          >
+            <X size={18} />
+          </button>
+        </header>
+
+        <div className="flex-1 overflow-y-auto p-5">
+          {error ? (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {error}
+            </div>
+          ) : null}
+
+          <section>
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-400">Providers</p>
+              <button
+                className="flex h-8 items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2.5 text-xs font-medium text-neutral-700 transition hover:bg-neutral-50"
+                onClick={resetForm}
+                type="button"
+              >
+                <PlusCircle size={14} />
+                新增
+              </button>
+            </div>
+
+            {loading ? <SkeletonRows count={2} /> : null}
+
+            {!loading && providers.length === 0 ? (
+              <EmptyState detail="添加第一个 Provider 后会自动设为默认。" title="暂无 Provider" />
+            ) : null}
+
+            {!loading && providers.length > 0 ? (
+              <div className="space-y-2">
+                {providers.map((provider) => (
+                  <div
+                    className={`rounded-lg border bg-white p-3 shadow-sm ${
+                      provider.id === editingId ? 'border-neutral-950' : 'border-neutral-200'
+                    }`}
+                    key={provider.id}
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-neutral-100 text-neutral-700">
+                        <Server size={18} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-semibold text-neutral-950">
+                            {providerTypeLabels[provider.providerType]}
+                          </p>
+                          {provider.isDefault ? (
+                            <span className="flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+                              <BadgeCheck size={12} />
+                              默认
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-1 truncate text-xs text-neutral-500">{provider.defaultModel}</p>
+                        {provider.baseUrl ? (
+                          <p className="mt-1 truncate text-xs text-neutral-400">{provider.baseUrl}</p>
+                        ) : null}
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <button
+                          aria-label="编辑 Provider"
+                          className="grid size-8 place-items-center rounded-md text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-950"
+                          onClick={() => startEdit(provider)}
+                          type="button"
+                        >
+                          <Pencil size={15} />
+                        </button>
+                        <button
+                          aria-label="删除 Provider"
+                          className="grid size-8 place-items-center rounded-md text-neutral-500 transition hover:bg-red-50 hover:text-red-600"
+                          disabled={saving}
+                          onClick={() => void handleDelete(provider)}
+                          type="button"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </section>
+
+          <form className="mt-5 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm" onSubmit={handleSubmit}>
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-sm font-semibold text-neutral-950">{editingId ? '编辑 Provider' : '新增 Provider'}</p>
+              {editingId ? (
+                <button
+                  className="text-xs font-medium text-neutral-500 transition hover:text-neutral-950"
+                  onClick={resetForm}
+                  type="button"
+                >
+                  取消编辑
+                </button>
+              ) : null}
+            </div>
+
+            <label className="block">
+              <span className="text-sm font-medium text-neutral-800">类型</span>
+              <select
+                className="mt-2 h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-950 outline-none transition focus:border-neutral-950 focus:ring-2 focus:ring-[#c6f56f]/70"
+                onChange={(event) => handleProviderTypeChange(event.target.value as ProviderType)}
+                value={form.providerType}
+              >
+                {Object.entries(providerTypeLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="mt-4 block">
+              <span className="text-sm font-medium text-neutral-800">默认模型</span>
+              <input
+                className="mt-2 h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-950 outline-none transition placeholder:text-neutral-400 focus:border-neutral-950 focus:ring-2 focus:ring-[#c6f56f]/70"
+                maxLength={100}
+                onChange={(event) => setForm((current) => ({ ...current, defaultModel: event.target.value }))}
+                placeholder={providerDefaults[form.providerType]}
+                required
+                value={form.defaultModel}
+              />
+            </label>
+
+            <label className="mt-4 block">
+              <span className="text-sm font-medium text-neutral-800">API Key</span>
+              <input
+                className="mt-2 h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-950 outline-none transition placeholder:text-neutral-400 focus:border-neutral-950 focus:ring-2 focus:ring-[#c6f56f]/70"
+                maxLength={500}
+                onChange={(event) => setForm((current) => ({ ...current, apiKey: event.target.value }))}
+                placeholder={editingId ? '留空则保留当前 Key' : 'sk-...'}
+                required={!editingId}
+                type="password"
+                value={form.apiKey}
+              />
+            </label>
+
+            <label className="mt-4 block">
+              <span className="text-sm font-medium text-neutral-800">Base URL</span>
+              <input
+                className="mt-2 h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-950 outline-none transition placeholder:text-neutral-400 focus:border-neutral-950 focus:ring-2 focus:ring-[#c6f56f]/70"
+                maxLength={500}
+                onChange={(event) => setForm((current) => ({ ...current, baseUrl: event.target.value }))}
+                placeholder={form.providerType === 'CUSTOM' ? 'https://api.example.com/v1' : '可选'}
+                value={form.baseUrl}
+              />
+            </label>
+
+            <label className="mt-4 flex items-center gap-2 text-sm font-medium text-neutral-800">
+              <input
+                checked={form.isDefault}
+                className="size-4 rounded border-neutral-300 text-neutral-950 accent-neutral-950"
+                onChange={(event) => setForm((current) => ({ ...current, isDefault: event.target.checked }))}
+                type="checkbox"
+              />
+              设为默认 Provider
+            </label>
+
+            <button
+              className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-neutral-950 px-4 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-300"
+              disabled={saving || !form.defaultModel.trim() || (!editingId && !form.apiKey.trim())}
+              type="submit"
+            >
+              <Save size={17} />
+              {saving ? '保存中' : '保存'}
+            </button>
+          </form>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
 type RoutePath = '/' | '/login' | '/register';
 
 const getRoutePath = (): RoutePath => {
@@ -687,6 +1038,7 @@ function WorkspaceApp({ onLogout, user }: { onLogout: () => void; user: UserInfo
   const [members, setMembers] = useState<SessionMemberResponse[]>([]);
   const [messages, setMessages] = useState<MessageResponse[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [loadingIndex, setLoadingIndex] = useState(true);
   const [loadingConversation, setLoadingConversation] = useState(false);
   const [errors, setErrors] = useState<ApiErrors>({});
@@ -816,10 +1168,12 @@ function WorkspaceApp({ onLogout, user }: { onLogout: () => void; user: UserInfo
           loading={loadingConversation}
           members={members}
           messages={messages}
+          onOpenSettings={() => setSettingsOpen(true)}
           selectedSession={selectedSession}
         />
         <WorkspacePanel codeBlocks={codeBlocks} />
       </div>
+      <SettingsPanel onClose={() => setSettingsOpen(false)} open={settingsOpen} />
     </main>
   );
 }

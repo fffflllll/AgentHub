@@ -3,12 +3,15 @@ import type {
   AgentResponse,
   ApiResponse,
   AuthResponse,
+  CreateProviderRequest,
   LoginRequest,
   MessagePageQuery,
   MessageResponse,
+  ProviderResponse,
   RegisterRequest,
   SessionMemberResponse,
   SessionResponse,
+  UpdateProviderRequest,
   UserInfo,
 } from './types';
 
@@ -149,6 +152,12 @@ export const agentHubApi = {
   login: (body: LoginRequest) => request<AuthResponse>('/auth/login', { method: 'POST', body, skipAuth: true }),
   getCurrentUser: () => request<UserInfo>('/users/me'),
   getAgents: () => request<AgentResponse[]>('/agents'),
+  getProviders: () => request<ProviderResponse[]>('/providers'),
+  createProvider: (body: CreateProviderRequest) =>
+    request<ProviderResponse>('/providers', { method: 'POST', body }),
+  updateProvider: (id: string, body: UpdateProviderRequest) =>
+    request<ProviderResponse>(`/providers/${encodeURIComponent(id)}`, { method: 'PUT', body }),
+  deleteProvider: (id: string) => request<void>(`/providers/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   getSessions: () => request<SessionResponse[]>('/sessions'),
   getSessionMembers: (sessionId: string) =>
     request<SessionMemberResponse[]>(`/sessions/${encodeURIComponent(sessionId)}/members`),

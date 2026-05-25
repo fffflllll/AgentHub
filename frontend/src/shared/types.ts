@@ -9,6 +9,7 @@ export type MemberType = 'USER' | 'AGENT';
 export type SenderType = 'USER' | 'AGENT' | 'SYSTEM';
 export type MessageType = 'TEXT' | 'CODE' | 'TASK_PLAN' | 'SYSTEM';
 export type TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED';
+export type ProviderType = 'OPENAI' | 'ANTHROPIC' | 'CUSTOM';
 
 export type UserInfo = {
   id: string;
@@ -39,6 +40,26 @@ export type AgentResponse = {
   roleDescription: string;
   defaultModel?: string;
 };
+
+export type ProviderResponse = {
+  id: string;
+  providerType: ProviderType;
+  baseUrl?: string | null;
+  defaultModel: string;
+  isDefault: boolean;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+};
+
+export type CreateProviderRequest = {
+  providerType: ProviderType;
+  apiKey: string;
+  baseUrl?: string | null;
+  defaultModel: string;
+  isDefault?: boolean;
+};
+
+export type UpdateProviderRequest = Partial<CreateProviderRequest>;
 
 export type SessionResponse = {
   id: string;
