@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.agenthub.mapper.UserProviderMapper">
+  <resultMap id="UserProviderResultMap" type="com.agenthub.model.UserProvider">
+    <id property="id" column="id" />
+    <result property="userId" column="user_id" />
+    <result property="providerType" column="provider_type" />
+    <result property="apiKeyEnc" column="api_key_enc" />
+    <result property="baseUrl" column="base_url" />
+    <result property="defaultModel" column="default_model" />
+    <result property="defaultProvider" column="is_default" />
+    <result property="createdAt" column="created_at" />
+    <result property="updatedAt" column="updated_at" />
+  </resultMap>
+
+  <sql id="ProviderColumns">
+    id, user_id, provider_type, api_key_enc, base_url, default_model, is_default, created_at, updated_at
+  </sql>
+
+  <select id="findByUserId" resultMap="UserProviderResultMap">
+    SELECT <include refid="ProviderColumns" />
+    FROM user_providers
+    WHERE user_id = #{userId}
+    ORDER BY is_default DESC, updated_at DESC
+  </select>
+
+  <select id="findByIdAndUserId" resultMap="UserProviderResultMap">
+    SELECT <include refid="ProviderColumns" />
+    FROM user_providers
+    WHERE id = #{id}
+      AND user_id = #{userId}
+  </select>
+
+  <select id="findFirstByUserId" resultMap="UserProviderResultMap">
+    SELECT <include refid="ProviderColumns" />
+    FROM user_providers
+    WHERE user_id = #{userId}
+    ORDER BY updated_at DESC
+    LIMIT 1
+  </select>
+
+  <select id="countByUserId" resultType="int">
+    SELECT COUNT(*)
+    FROM user_providers
+    WHERE user_id = #{userId}
+  </select>
+
+  <insert id="insert" parameterType="com.agenthub.model.UserProvider">
+    INSERT INTO user_providers (id, user_id, provider_type, api_key_enc, base_url, default_model, is_default)
+    VALUES (#{id}, #{userId}, #{providerType}, #{apiKeyEnc}, #{baseUrl}, #{defaultModel}, #{defaultProvider})
+  </insert>
+
+  <update id="update" parameterType="com.agenthub.model.UserProvider">
+    UPDATE user_providers
+    SET provider_type = #{providerType},
+        api_key_enc = #{apiKeyEnc},
+        base_url = #{baseUrl},
+        default_model = #{defaultModel},
+        is_default = #{defaultProvider}
+    WHERE id = #{id}
+      AND user_id = #{userId}
+  </update>
+
+  <delete id="deleteByIdAndUserId">
+    DELETE FROM user_providers
+    WHERE id = #{id}
+      AND user_id = #{userId}
+  </delete>
+
+  <update id="clearDefaults">
+    UPDATE user_providers
+    SET is_default = 0
+    WHERE user_id = #{userId}
+      AND is_default = 1
+  </update>
+
+  <update id="markDefault">
+    UPDATE user_providers
+    SET is_default = 1
+    WHERE id = #{id}
+      AND user_id = #{userId}
+  </update>
+</mapper>
