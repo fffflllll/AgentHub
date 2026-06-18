@@ -1,7 +1,7 @@
 import tempfile
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -20,6 +20,7 @@ import aiohttp
 from nanobot.bus.events import OutboundMessage
 from nanobot.bus.queue import MessageBus
 from nanobot.channels.qq import QQChannel, QQConfig
+from nanobot.pairing import store
 
 
 class _FakeApi:
@@ -101,6 +102,48 @@ async def test_on_group_message_passes_is_dm_false_to_base_handler() -> None:
     assert kwargs["chat_id"] == "group123"
     assert kwargs["content"] == "hello"
     assert kwargs["is_dm"] is False
+
+
+@pytest.mark.asyncio
+async def test_unauthorized_c2c_message_gets_pairing_code(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(store, "_store_path", lambda: tmp_path / "pairing.json")
+    channel = QQChannel(QQConfig(app_id="app", secret="secret", allow_from=[]), MessageBus())
+    channel._client = _FakeClient()
+
+    data = SimpleNamespace(
+        id="msg-unauth-c2c",
+        content="hello",
+        author=SimpleNamespace(user_openid="user-not-allowed"),
+        attachments=[],
+    )
+
+    await channel._on_message(data, is_group=False)
+
+    assert channel.bus.inbound.empty()
+    assert len(channel._client.api.c2c_calls) == 1
+    call = channel._client.api.c2c_calls[0]
+    assert call["openid"] == "user-not-allowed"
+    assert "Your pairing code is:" in call["content"]
+
+
+@pytest.mark.asyncio
+async def test_unauthorized_group_message_does_not_reply_or_publish() -> None:
+    channel = QQChannel(QQConfig(app_id="app", secret="secret", allow_from=[]), MessageBus())
+    channel._client = _FakeClient()
+
+    data = SimpleNamespace(
+        id="msg-unauth-group",
+        content="hello group",
+        group_openid="group123",
+        author=SimpleNamespace(member_openid="user-not-allowed"),
+        attachments=[],
+    )
+
+    await channel._on_message(data, is_group=True)
+
+    assert channel.bus.inbound.empty()
+    assert channel._client.api.c2c_calls == []
+    assert channel._client.api.group_calls == []
 
 
 @pytest.mark.asyncio

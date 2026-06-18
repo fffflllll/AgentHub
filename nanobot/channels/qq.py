@@ -489,6 +489,13 @@ class QQChannel(BaseChannel):
                 chat_type = "c2c"
 
             content = (data.content or "").strip()
+            self.logger.info(
+                "received {} message id={} sender={} chat={}",
+                chat_type,
+                data.id,
+                user_id,
+                chat_id,
+            )
 
             if data.id in self._processed_ids:
                 return
@@ -528,7 +535,7 @@ class QQChannel(BaseChannel):
             if not content and not media_paths:
                 return
 
-            if self.config.ack_message:
+            if self.config.ack_message and self.is_allowed(user_id):
                 try:
                     await self._send_text_only(
                         chat_id=chat_id,

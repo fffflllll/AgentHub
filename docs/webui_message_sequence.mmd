@@ -1,0 +1,64 @@
+sequenceDiagram
+    autonumber
+    participant User as 用户
+    participant Composer as ThreadComposer
+    participant Shell as ThreadShell
+    participant StreamHook as useNanobotStream
+    participant Client as NanobotClient
+    participant WS as WebSocketChannel
+    participant Bus as MessageBus
+    participant AgentCore as AgentLoop / AgentRunner
+    participant Manager as ChannelManager
+    participant UI as ThreadViewport / MessageBubble
+
+    User->>Composer: 输入内容并提交
+    Composer->>Shell: onSend(content, images, options)
+    Shell->>StreamHook: send(content, images, workspaceScope)
+    StreamHook->>StreamHook: 追加乐观 user bubble，setIsStreaming(true)
+    StreamHook->>Client: sendMessage(chatId, content, media, options)
+    Client->>WS: WS frame {type:"message", chat_id, content, media?, webui:true}
+
+    WS->>WS: _dispatch_envelope 校验 chat/content/media/scope
+    WS->>WS: attach chat_id，保存媒体，写 WebUI transcript
+    WS->>Bus: publish_inbound(InboundMessage)
+
+    Bus->>AgentCore: consume_inbound()
+    AgentCore->>AgentCore: RESTORE -> COMPACT -> COMMAND -> BUILD
+    AgentCore->>AgentCore: ContextBuilder.build_messages()
+    AgentCore->>AgentCore: AgentRunner.run 调 provider / tools
+
+    alt 模型请求工具
+        AgentCore->>AgentCore: ToolRegistry.execute()
+        AgentCore-->>Manager: progress/tool/file_edit OutboundMessage
+        Manager->>WS: channel.send(outbound)
+        WS-->>Client: message(kind=progress/tool_hint) 或 file_edit
+        Client-->>StreamHook: onChat(chatId, event)
+        StreamHook-->>UI: 更新 activity trace / file edit
+        AgentCore->>AgentCore: 工具结果加入 messages 后继续调 provider
+    end
+
+    alt 流式回复
+        AgentCore-->>Manager: _stream_delta OutboundMessage
+        Manager->>WS: send_delta()
+        WS-->>Client: delta(text)
+        Client-->>StreamHook: dispatch(chatId, delta)
+        StreamHook-->>UI: 更新 streaming assistant bubble
+        AgentCore-->>Manager: _stream_end OutboundMessage
+        Manager->>WS: send_delta(... stream_end)
+        WS-->>Client: stream_end
+        StreamHook-->>UI: 关闭当前文本段，继续保持 loading
+    else 非流式回复
+        AgentCore-->>Manager: 普通 OutboundMessage
+        Manager->>WS: send()
+        WS-->>Client: message(text)
+        Client-->>StreamHook: dispatch(chatId, message)
+        StreamHook-->>UI: 显示完整 assistant message
+    end
+
+    AgentCore->>AgentCore: _save_turn + SessionManager.save
+    AgentCore-->>Manager: _turn_end OutboundMessage
+    Manager->>WS: send_turn_end()
+    WS-->>Client: turn_end(latency_ms?)
+    Client-->>StreamHook: dispatch(chatId, turn_end)
+    StreamHook->>StreamHook: setIsStreaming(false)，清理 streaming 标记
+    StreamHook-->>UI: 最终回复稳定显示
